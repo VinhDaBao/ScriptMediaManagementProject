@@ -1,38 +1,55 @@
 import express from "express";
-import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 
-// Import các file nội bộ phải có đuôi .js
+// Internal imports
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
 
-// Nạp biến môi trường
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// 1. Cấu hình Middleware
-app.use(cors({ origin: true }));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// =========================
+// Middleware
+// =========================
 
-// 2. Kết nối CSDL MongoDB Atlas
+app.use(cors({ origin: true }));
+
+app.use(express.json());
+
+app.use(express.urlencoded({ extended: true }));
+
+// =========================
+// Database Connection
+// =========================
+
 connectDB();
 
-// 3. Khởi tạo Routes
-// Sử dụng prefix /api/auth cho các chức năng đăng ký, đăng nhập
+// =========================
+// Routes
+// =========================
+
+// Auth APIs
 app.use("/api/auth", authRoutes);
 
-// Route kiểm tra server
+// Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
 });
 
-const port = process.env.PORT || 8080;
+// =========================
+// Start Server
+// =========================
 
-app.listen(port, () => {
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, () => {
+
     console.log("--------------------------------------------------");
-    console.log(`>>> SMM Project API is running on port: ${port}`);
+
+    console.log(`>>> SMM Project API is running on port: ${PORT}`);
+
     console.log("--------------------------------------------------");
 });

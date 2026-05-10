@@ -50,6 +50,19 @@ export const verifyOTP = async (email, otp) => {
     user.otpCode = undefined;
     user.otpExpires = undefined;
     await user.save();
+};
 
+export const loginService = async (email, password) => {
+    const user = await User.findOne({ email });
+    console.log(user)
+    
+    if (!user) {
+        throw new Error('User not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+        throw new Error('Invalid password');
+    }
     return user;
 };
