@@ -1,11 +1,9 @@
-'use strict';
-
-const mongoose = require('mongoose');
-const User = require('./User'); // File User.js mình vừa tạo lúc nãy
+// src/models/index.js
+import mongoose from 'mongoose';
+import User from './user.js'; // Nhớ đuôi .js
 
 const db = {};
-
-db.User = User;
 db.mongoose = mongoose;
+db.User = User;
 
-module.exports = db;
+export default db;

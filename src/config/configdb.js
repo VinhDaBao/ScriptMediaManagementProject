@@ -1,18 +1,21 @@
-const mongoose = require('mongoose');
-require('dotenv').config(); // Đảm bảo đã load biến môi trường
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
 
-let connectDB = async () => {
+dotenv.config(); // Nạp biến môi trường từ file .env
+
+const connectDB = async () => {
     try {
-        // Thay vì dán link trực tiếp, ta gọi từ file .env
         const dbURI = process.env.MONGO_URI; 
+        if (!dbURI) {
+            throw new Error("MONGO_URI không tồn tại trong file .env");
+        }
         
         await mongoose.connect(dbURI);
-        
         console.log('>>> MongoDB Connection has been established successfully.');
     } catch (error) {
         console.error('Unable to connect to the database:', error);
-        process.exit(1); // Dừng app nếu không kết nối được DB
+        process.exit(1); 
     }
 }
 
-module.exports = connectDB;
+export default connectDB; // Xuất hàm theo chuẩn ESM

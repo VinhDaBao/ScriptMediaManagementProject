@@ -1,15 +1,45 @@
-import express from 'express';
-import userController from '../controller/userController';
+import express from 'express'
 
-let router = express.Router();
+import { registerLimiter } from '../middlewares/rateLimit.js'
 
-let initApiRoutes = (app) => {
-	
-	router.post('/api/forgot-password', userController.handleForgotPassword);
-	router.post('/api/reset-password', userController.handleResetPassword);
-    router.put('/api/edit-profile', userController.handleEditProfile);
+import { validateRegister } from '../middlewares/validation.js'
 
-	return app.use('/', router);
-}
+import * as authController from '../controller/authController.js'
 
-module.exports = initApiRoutes;
+import userController from '../controller/userController.js'
+
+const router = express.Router()
+
+// Register
+router.post(
+    '/register',
+    registerLimiter,
+    validateRegister,
+    authController.register
+)
+
+// Verify OTP
+router.post(
+    '/verify-otp',
+    authController.verifyOTP
+)
+
+// Forgot password
+router.post(
+    '/forgot-password',
+    userController.handleForgotPassword
+)
+
+// Reset password
+router.post(
+    '/reset-password',
+    userController.handleResetPassword
+)
+
+// Edit profile
+router.put(
+    '/edit-profile',
+    userController.handleEditProfile
+)
+
+export default router
