@@ -21,9 +21,9 @@ export const verifyOTP = async (req, res) => {
         const { email, otp } = req.body;
         await authService.verifyOTP(email, otp);
 
-        res.status(200).json({ message: "Tài khoản đã được kích hoạt thành công. Bạn có thể đăng nhập ngay bây giờ." });
+        res.status(200).json({ errCode: 0, message: "Tài khoản đã được kích hoạt thành công. Bạn có thể đăng nhập ngay bây giờ." });
     } catch (error) {
-        res.status(400).json({ message: error.message });
+        res.status(400).json({ errCode: 1,message: error.message });
     }
 };
 import { validationResult } from 'express-validator'
@@ -33,29 +33,34 @@ import { loginService } from '../services/authService.js'
 import generateToken from '../utils/jwt.js'
 
 export const login = async (req, res) => {
-
     try {
-
         const errors = validationResult(req)
-
         if (!errors.isEmpty()) {
             return res.status(400).json(errors)
         }
 
         const { email, password } = req.body
-
         const user = await loginService(email, password)
-
         const token = generateToken.generateToken(user)
+
+        // THÊM ĐOẠN NÀY: Xử lý redirectUrl dựa vào role giống đồ án cá nhân
+        const redirectUrl = user.role === "admin" ? "/admin/profile" : "/user/profile";
 
         return res.json({
             message: 'Login success',
             token,
-            role: user.role
+            redirectUrl,
+
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                fullName: user.fullName,
+                avatar: user.avatar
+            }
         })
 
     } catch (error) {
-
         return res.status(401).json({
             message: error.message
         })

@@ -10,6 +10,9 @@ import loginLimiter from '../middlewares/rateLimitMiddleware.js';
 import { body } from 'express-validator';
 import upload from '../middlewares/upload.js';
 
+// BỔ SUNG DÒNG NÀY ĐỂ KẾT NỐI VỚI DATABASE
+import User from '../models/user.js'; 
+
 const router = express.Router();
 
 // Register & Login
@@ -17,26 +20,41 @@ router.post('/register', registerLimiter, validateRegister, authController.regis
 router.post('/verify-otp', authController.verifyOTP);
 router.post('/login', loginLimiter, body('email').isEmail(), body('password').isLength({ min: 6 }), login);
 
-// Profile
-router.get('/user/profile', authMiddleware, authorizeRole('user'), (req, res) => {
-    res.json({ message: 'Welcome user', user: req.user });
+// ==========================================
+// ĐÃ SỬA: LẤY DỮ LIỆU TỪ DATABASE THAY VÌ TOKEN CŨ
+// ==========================================
+router.get('/user/profile', authMiddleware, authorizeRole('user'), async (req, res) => {
+    try {
+        // Dùng id từ token để tìm user trong MongoDB, loại bỏ field password cho an toàn
+        const user = await User.findById(req.user.id).select('-password');
+        res.json({ message: 'Welcome user', user: user });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi server khi lấy profile' });
+    }
 });
 
-router.get('/admin/profile', authMiddleware, authorizeRole('admin'), (req, res) => {
-    res.json({ message: 'Welcome admin', user: req.user });
+router.get('/admin/profile', authMiddleware, authorizeRole('admin'), async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json({ message: 'Welcome admin', user: user });
+    } catch (error) {
+        res.status(500).json({ message: 'Lỗi server khi lấy profile admin' });
+    }
 });
+// ==========================================
 
-router.put(
-    '/edit-profile', 
-    authMiddleware, 
-    upload.single('avatar'), 
-    userController.default.handleEditProfile
-);
+router.get('/all-users', authMiddleware, authorizeRole('admin'), async (req, res) => {
+    try {
+        const users = await User.find({ role: 'user' }).select('-password');
+        res.json({ errCode: 0, users: users });
+    } catch (error) {
+        res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+    }
+});
 
 router.post('/forgot-password', userController.default.handleForgotPassword);
-router.post('/verify-forgot-password-otp',userController.default.handleVerifyForgotPasswordOTP);
+router.post('/verify-forgot-password-otp', userController.default.handleVerifyForgotPasswordOTP);
 router.post('/reset-password', userController.default.handleResetPassword);
-router.put('/edit-profile',authMiddleware, userController.default.handleEditProfile);
 router.put('/edit-profile', authMiddleware, upload.single('avatar'), userController.default.handleEditProfile);
 
 export default router;

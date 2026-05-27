@@ -1,6 +1,8 @@
 import User from '../models/User.js'; // Nhớ thêm đuôi .js nếu Node.js yêu cầu
 import bcrypt from 'bcryptjs';
 import transporter from '../config/mailer.js';
+import fs from 'fs';
+import path from 'path';
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -71,16 +73,42 @@ const resetPassword = async (data) => {
 
 const handleUpdateProfile = (currentUser, data) => {
     return new Promise(async (resolve, reject) => {
+
         try {
-            let user = await User.findById(currentUser.user._id);
+
+            let user = await User.findById(currentUser.id);
+
             if (!user) {
                 return resolve({
                     errCode: 1,
                     message: 'Không tìm thấy user!'
                 });
             }
-            user.fullName = data.fullName;
+
+            // UPDATE FULL NAME
+            if (data.fullName) {
+                user.fullName = data.fullName;
+            }
+
+            // UPDATE AVATAR
             if (data.avatar) {
+
+                // ================= XÓA ẢNH CŨ =================
+                if (user.avatar) {
+
+                    const oldImagePath = path.join(
+                        process.cwd(),
+                        'src/public',
+                        user.avatar
+                    );
+
+                    // KIỂM TRA FILE TỒN TẠI RỒI MỚI XÓA
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                }
+
+                // LƯU ẢNH MỚI
                 user.avatar = data.avatar;
             }
 
@@ -91,7 +119,9 @@ const handleUpdateProfile = (currentUser, data) => {
                 message: 'Cập nhật thành công!',
                 user: user
             });
+
         } catch (e) {
+
             reject(e);
         }
     });

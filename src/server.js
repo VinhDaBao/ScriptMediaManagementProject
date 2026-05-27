@@ -10,6 +10,7 @@ import authRoutes from "./route/authRoutes.js";
 dotenv.config();
 
 const app = express();
+app.use(express.json());
 
 // =========================
 // Middleware

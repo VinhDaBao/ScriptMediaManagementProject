@@ -60,6 +60,11 @@ export const loginService = async (email, password) => {
         throw new Error('User not found');
     }
 
+    // THÊM ĐOẠN NÀY: Kiểm tra xem tài khoản đã kích hoạt OTP chưa
+    if (user.isActivated === false) {
+        throw new Error('Tài khoản của bạn chưa được kích hoạt bằng mã OTP!');
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
         throw new Error('Invalid password');
