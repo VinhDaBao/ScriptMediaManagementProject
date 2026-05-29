@@ -13,7 +13,7 @@ const generateToken = (user) => {
     };
 
     // 2. Ký token với payload này (bỏ dấu {} bao quanh chữ payload đi nhé)
-    return jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: '1d'});
+    return jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: '2h'});
 }
 
 export default {
