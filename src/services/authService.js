@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 import User from '../models/user.js';
 import { sendOTP } from '../utils/sendEmail.js';
-
+import mongoose from 'mongoose';
 export const registerUser = async (userData) => {
     const { email, password } = userData;
 
@@ -55,7 +55,8 @@ export const verifyOTP = async (email, otp) => {
 export const loginService = async (email, password) => {
     const user = await User.findOne({ email });
     console.log(user)
-    
+    console.log('Database:', mongoose.connection.db?.databaseName);
+    console.log('Host:', mongoose.connection.host);
     if (!user) {
         throw new Error('User not found');
     }

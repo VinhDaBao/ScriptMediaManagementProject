@@ -1,10 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
+import User from "./models/user.js";
 // Internal imports
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
+import testRoutes from "./route/testRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -29,14 +30,13 @@ app.use('/images', express.static('src/public/images'));
 // =========================
 
 connectDB();
-
 // =========================
 // Routes
 // =========================
 
 // Auth APIs
 app.use("/api/auth", authRoutes);
-
+app.use("/test",testRoutes);
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
