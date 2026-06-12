@@ -1,26 +1,33 @@
-import express from 'express';
-import User from '../models/user.js'; // Đảm bảo import model User để truy vấn database
-import mongoose from 'mongoose'; // Import mongoose để kiểm tra kết nối database
-const route = express.Router();
+import express from "express";
+import mongoose from "mongoose";
+import User from "../models/user.js";
+
+const router = express.Router();
+
 console.log("TEST ROUTE LOADED");
-route.get('/test', async (req, res) => {
+
+// GET /test
+router.get("/", async (req, res) => {
     try {
         const users = await User.find({});
 
-        res.json({
-            message: 'Test route is working!',
+        return res.json({
+            message: "Test route is working!",
             database: {
-                name: mongoose.connection.db?.databaseName || 'No database connected',
-                host: mongoose.connection.host || 'No host information'
+                name: mongoose.connection.db?.databaseName || null,
+                host: mongoose.connection.host || null,
+                readyState: mongoose.connection.readyState
             },
+            count: users.length,
             users
         });
 
     } catch (error) {
-        res.status(500).json({
-            message: 'Error fetching users',
+        return res.status(500).json({
+            message: "Error fetching users",
             error: error.message
         });
     }
 });
-export default route;
+
+export default router;
