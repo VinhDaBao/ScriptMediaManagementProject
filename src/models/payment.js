@@ -12,7 +12,6 @@ const paymentSchema = new mongoose.Schema(
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
-      index: true,
     },
 
     amount: {
