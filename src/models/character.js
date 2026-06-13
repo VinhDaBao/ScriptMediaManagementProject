@@ -16,7 +16,6 @@ const characterSchema = new mongoose.Schema(
       index: true,
     },
 
-
     description: {
       type: String,
       default: "",
@@ -26,7 +25,6 @@ const characterSchema = new mongoose.Schema(
       {
         type: String,
         trim: true,
-        index: true,
       },
     ],
 
