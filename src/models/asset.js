@@ -62,6 +62,6 @@ mediaSchema.index({ workspaceId: 1, type: 1 });
 mediaSchema.index({ tags: 1 });
 mediaSchema.index({ isFavorite: 1 });
 
-const Media = mongoose.model("Media", mediaSchema);
+const Asset = mongoose.model("Asset", mediaSchema);
 
-export default Media;
+export default Asset;

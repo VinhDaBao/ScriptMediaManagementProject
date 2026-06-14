@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import './config/redis.js';
 
 // Internal imports
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
+import assetRoutes from "./route/assetRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +25,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/images', express.static('src/public/images'));
+
+app.use('/api/assets', assetRoutes);
 
 // =========================
 // Database Connection
