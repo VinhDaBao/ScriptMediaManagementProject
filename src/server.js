@@ -1,8 +1,9 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import './config/redis.js'; 
 import User from "./models/user.js";
-// Internal imports
+
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
 import testRoutes from "./route/testRoutes.js";
@@ -19,7 +20,6 @@ import subscriptionRoutes from "./route/subscriptionRoutes.js";
 import projectAssetRoutes from "./route/projectAssetRoutes.js";
 import workspaceInviteRoutes from "./route/workspaceInviteRoutes.js";
 import workspaceMemberRoutes from "./route/workspaceMemberRoutes.js";
-
 // Load environment variables
 dotenv.config();
 
@@ -37,6 +37,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/images', express.static('src/public/images'));
+
+app.use('/api/assets', assetRoutes);
 
 // =========================
 // Database Connection

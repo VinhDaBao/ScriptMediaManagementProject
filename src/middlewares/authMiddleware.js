@@ -26,10 +26,10 @@ const authMiddleware = (req, res, next) => {
         next()
 
     } catch (error) {
-
-        return res.status(401).json({
-            message: 'Invalid token'
-        })
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'jwt expired' });
+        }
+        return res.status(401).json({ message: 'Invalid token' });
     }
 }
 
