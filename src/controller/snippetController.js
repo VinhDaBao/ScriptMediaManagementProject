@@ -7,6 +7,7 @@ const sendError = (res, error) => {
 
 const createSnippet = async (req, res) => {
     try {
+        req.body.workspaceId = req.params.workspaceId;
         const snippet = await snippetService.createSnippet(req.body);
         return res.status(201).json({ errCode: 0, message: 'Snippet created successfully', data: snippet });
     } catch (error) {
@@ -16,7 +17,8 @@ const createSnippet = async (req, res) => {
 
 const getAllSnippets = async (req, res) => {
     try {
-        const snippets = await snippetService.getAllSnippets();
+        const { workspaceId } = req.params;
+        const snippets = await snippetService.getAllSnippets(workspaceId);
         return res.status(200).json({ errCode: 0, message: 'Snippets fetched successfully', data: snippets });
     } catch (error) {
         return sendError(res, error);

@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import './config/redis.js';
+import http from "http";
+import { Server } from "socket.io";
 
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
@@ -19,7 +21,11 @@ import subscriptionRoutes from "./route/subscriptionRoutes.js";
 import projectAssetRoutes from "./route/projectAssetRoutes.js";
 import workspaceInviteRoutes from "./route/workspaceInviteRoutes.js";
 import workspaceMemberRoutes from "./route/workspaceMemberRoutes.js";
+import projectSnapshotRoutes from "./route/projectSnapshotRoutes.js";
+import activityLogRoutes from "./route/activityLogRoutes.js";
 import { startInviteCron } from "./jobs/inviteCron.js";
+import hocuspocusServer from "./config/hocuspocus.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -45,6 +51,7 @@ app.use('/api/assets', assetRoutes);
 // =========================
 
 connectDB();
+
 // =========================
 // Routes
 // =========================
@@ -52,38 +59,55 @@ app.use((req, res, next) => {
     console.log("REQUEST:", req.method, req.url);
     next();
 });
+
 // Auth APIs
 app.use("/api/auth", authRoutes);
 app.use("/api/workspaces", workspaceRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/characters", characterRoutes);
-app.use("/api/blocks", blockRoutes);
+app.use("/api/workspaces", activityLogRoutes); // GET /api/workspaces/:workspaceId/activity-logs
+app.use("/api/workspaces/:workspaceId/projects", projectSnapshotRoutes); // Snapshot endpoints
+app.use("/api/workspaces/:workspaceId/projects", projectRoutes);
+app.use("/api/workspaces/:workspaceId/characters", characterRoutes);
+app.use("/api/workspaces/:workspaceId/projects/:projectId/blocks", blockRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/plans", planRoutes);
-app.use("/api/snippets", snippetRoutes);
+app.use("/api/workspaces/:workspaceId/snippets", snippetRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
-app.use("/api/project-assets", projectAssetRoutes);
+app.use("/api/workspaces/:workspaceId/projects/:projectId/project-assets", projectAssetRoutes);
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
 app.use("/test", testRoutes);
+
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
 });
 
 // =========================
-// Start Server
+// Start Server with Socket.IO & Hocuspocus
 // =========================
 
 const PORT = process.env.PORT || 8080;
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
-app.listen(PORT, () => {
+io.on("connection", (socket) => {
+  console.log(`[Socket] User connected: ${socket.id}`);
+  
+  socket.on("disconnect", () => {
+    console.log(`[Socket] User disconnected: ${socket.id}`);
+  });
+});
 
+server.listen(PORT, () => {
     console.log("--------------------------------------------------");
-
     console.log(`>>> SMM Project API is running on port: ${PORT}`);
-
     console.log("--------------------------------------------------");
     startInviteCron();
+    hocuspocusServer.listen();
 });

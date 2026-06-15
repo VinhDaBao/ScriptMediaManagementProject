@@ -11,7 +11,7 @@ const projectAssetSchema = new mongoose.Schema(
 
     assetId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Media",
+      ref: "Asset",
       required: true,
       index: true,
     },

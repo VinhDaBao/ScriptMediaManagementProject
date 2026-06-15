@@ -1,5 +1,5 @@
 import { CronJob } from 'cron';
-import WorkspaceInvite from "../models/WorkspaceInvite.js";
+import WorkspaceInvite from "../models/workspaceinvite.js";
 
 const checkExpiredInvites = async () => {
   try {
@@ -26,7 +26,7 @@ export const startInviteCron = () => {
 
   // Schedule to run every hour at minute 0: "0 * * * *"
   const job = new CronJob('0 * * * *', checkExpiredInvites);
-  
+
   job.start();
-  console.log("[Cron] Workspace invite expiration cron started (using 'cron' npm package, interval: 1 hour).");
+  console.log("[Cron] Workspace invite expiration cron started (interval: 1 hour).");
 };

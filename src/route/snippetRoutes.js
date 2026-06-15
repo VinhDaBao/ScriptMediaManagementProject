@@ -1,12 +1,14 @@
 import express from 'express';
 import snippetController from '../controller/snippetController.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
+import { authorizeWorkspace } from '../middlewares/authorMiddleware.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
-router.post('/', snippetController.createSnippet);
-router.get('/', snippetController.getAllSnippets);
-router.get('/:id', snippetController.getSnippetById);
-router.put('/:id', snippetController.updateSnippet);
-router.delete('/:id', snippetController.deleteSnippet);
+router.post('/', authMiddleware, authorizeWorkspace("EDITOR"), snippetController.createSnippet);
+router.get('/', authMiddleware, authorizeWorkspace("VIEWER"), snippetController.getAllSnippets);
+router.get('/:id', authMiddleware, authorizeWorkspace("VIEWER"), snippetController.getSnippetById);
+router.put('/:id', authMiddleware, authorizeWorkspace("EDITOR"), snippetController.updateSnippet);
+router.delete('/:id', authMiddleware, authorizeWorkspace("EDITOR"), snippetController.deleteSnippet);
 
 export default router;

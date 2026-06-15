@@ -1,4 +1,4 @@
-import WorkspaceMember from "../models/WorkspaceMember.js";
+import WorkspaceMember from "../models/workspacemember.js";
 const ROLE_LEVEL = {
   VIEWER: 1,
   EDITOR: 2,
@@ -7,28 +7,28 @@ const ROLE_LEVEL = {
 };
 export const authorizeWorkspace =
   (minRole = "VIEWER") =>
-  async (req, res, next) => {
-    const member =
-      await WorkspaceMember.findOne({
-        workspaceId: req.params.workspaceId|| req.body.workspaceId,
-        userId: req.user.id,
-      });
-    if (!member) {
-      return res.status(403).json({
-        message: "Access denied",
-      });
-    }
+    async (req, res, next) => {
+      const member =
+        await WorkspaceMember.findOne({
+          workspaceId: req.params.workspaceId || req.body.workspaceId,
+          userId: req.user.id,
+        });
+      if (!member) {
+        return res.status(403).json({
+          message: "Access denied",
+        });
+      }
 
-    if (
-      ROLE_LEVEL[member.role] <
-      ROLE_LEVEL[minRole]
-    ) {
-      return res.status(403).json({
-        message: "Insufficient permission",
-      });
-    }
+      if (
+        ROLE_LEVEL[member.role] <
+        ROLE_LEVEL[minRole]
+      ) {
+        return res.status(403).json({
+          message: "Insufficient permission",
+        });
+      }
 
-    req.workspaceMember = member;
+      req.workspaceMember = member;
 
-    next();
-  };
+      next();
+    };

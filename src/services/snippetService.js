@@ -31,8 +31,14 @@ const createSnippet = async (data) => {
     });
 };
 
-const getAllSnippets = async () => {
-    return await Snippet.find({}).sort({ createdAt: -1 });
+const getAllSnippets = async (workspaceId) => {
+    if (!workspaceId) {
+        throw buildValidationError('workspaceId is required');
+    }
+    if (!isValidObjectId(workspaceId)) {
+        throw buildValidationError('Invalid workspaceId');
+    }
+    return await Snippet.find({ workspaceId }).sort({ createdAt: -1 });
 };
 
 const getSnippetById = async (id) => {

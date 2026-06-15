@@ -7,6 +7,7 @@ const sendError = (res, error) => {
 
 const createProjectAsset = async (req, res) => {
     try {
+        req.body.projectId = req.params.projectId;
         const projectAsset = await projectAssetService.createProjectAsset(req.body);
         return res.status(201).json({ errCode: 0, message: 'Project asset created successfully', data: projectAsset });
     } catch (error) {
@@ -14,9 +15,21 @@ const createProjectAsset = async (req, res) => {
     }
 };
 
+const attachAssets = async (req, res) => {
+    try {
+        const projectId = req.params.projectId;
+        const { assetIds } = req.body;
+        const projectAssets = await projectAssetService.attachAssets(projectId, assetIds);
+        return res.status(201).json({ errCode: 0, message: 'Assets attached successfully', data: projectAssets });
+    } catch (error) {
+        return sendError(res, error);
+    }
+};
+
 const getAllProjectAssets = async (req, res) => {
     try {
-        const projectAssets = await projectAssetService.getAllProjectAssets();
+        const projectId = req.params.projectId || req.query.projectId;
+        const projectAssets = await projectAssetService.getAllProjectAssets(projectId);
         return res.status(200).json({ errCode: 0, message: 'Project assets fetched successfully', data: projectAssets });
     } catch (error) {
         return sendError(res, error);
@@ -52,6 +65,7 @@ const deleteProjectAsset = async (req, res) => {
 
 export default {
     createProjectAsset,
+    attachAssets,
     getAllProjectAssets,
     getProjectAssetById,
     updateProjectAsset,

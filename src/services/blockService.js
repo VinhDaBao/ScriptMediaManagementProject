@@ -29,8 +29,14 @@ const createBlock = async (data) => {
     });
 };
 
-const getAllBlocks = async () => {
-    return await Block.find({}).sort({ createdAt: -1 });
+const getAllBlocks = async (projectId) => {
+    if (!projectId) {
+        throw buildValidationError('projectId is required');
+    }
+    if (!isValidObjectId(projectId)) {
+        throw buildValidationError('Invalid projectId');
+    }
+    return await Block.find({ projectId }).sort({ position: 1 });
 };
 
 const getBlockById = async (id) => {
