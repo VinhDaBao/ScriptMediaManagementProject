@@ -1,12 +1,14 @@
 import express from 'express';
-import workspaceMemberController from '../controller/workspaceMemberController.js';
-
+import {getMembers, changeRole, removeMember, leaveWorkspace} from '../controller/workspaceMemberController.js';
+import {authorizeWorkspace} from '../middlewares/authorMiddleware.js';
+import authMiddleware from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
-router.post('/', workspaceMemberController.createWorkspaceMember);
-router.get('/', workspaceMemberController.getAllWorkspaceMembers);
-router.get('/:id', workspaceMemberController.getWorkspaceMemberById);
-router.put('/:id', workspaceMemberController.updateWorkspaceMember);
-router.delete('/:id', workspaceMemberController.deleteWorkspaceMember);
+router.get("/:workspaceId/members",authMiddleware, authorizeWorkspace("VIEWER"), getMembers);
+
+router.patch("/:workspaceId/members/:memberId/role", authMiddleware, authorizeWorkspace("OWNER"), changeRole);
+
+router.delete("/:workspaceId/members/:memberId", authMiddleware, authorizeWorkspace("OWNER"), removeMember);
+router.post("/:workspaceId/leave", authMiddleware, authorizeWorkspace("VIEWER"), leaveWorkspace);
 
 export default router;

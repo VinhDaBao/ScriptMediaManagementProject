@@ -1,117 +1,124 @@
-import mongoose from 'mongoose';
-import WorkspaceMember from '../models/workspacemember.js';
+import WorkspaceMember from "../models/WorkspaceMember.js";
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
-
-const buildValidationError = (message) => {
-    const error = new Error(message);
-    error.statusCode = 400;
-    return error;
+/**
+ * Get all members
+ */
+export const getWorkspaceMembers = async (workspaceId) => {
+  return WorkspaceMember.find({ workspaceId })
+    .populate("userId", "fullName email avatar")
+    .sort({ createdAt: 1 });
 };
 
-const createWorkspaceMember = async (data) => {
-    const requiredFields = ['workspaceId', 'userId'];
-    const missingField = requiredFields.find((field) => !data?.[field]);
+/**
+ * Change role
+ */
+export const changeMemberRole = async ({ workspaceId, memberId, role }) => {
+  const member = await WorkspaceMember.findOne({
+    _id: memberId,
+    workspaceId,
+  });
 
-    if (missingField) {
-        throw buildValidationError(`Missing required field: ${missingField}`);
-    }
+  if (!member) throw new Error("Member not found in this workspace");
 
-    if (!isValidObjectId(data.workspaceId)) {
-        throw buildValidationError('Invalid workspaceId');
-    }
+  // không cho sửa OWNER trực tiếp
+  if (member.role === "OWNER" && role !== "OWNER") {
+    throw new Error("Cannot change OWNER role directly");
+  }
 
-    if (!isValidObjectId(data.userId)) {
-        throw buildValidationError('Invalid userId');
-    }
-
-    const existingMember = await WorkspaceMember.findOne({ workspaceId: data.workspaceId, userId: data.userId });
-    if (existingMember) {
-        throw buildValidationError('Workspace member already exists');
-    }
-
-    return await WorkspaceMember.create({
-        workspaceId: data.workspaceId,
-        userId: data.userId,
-        role: data.role ?? 'VIEWER',
-        joinedAt: data.joinedAt,
+  // 👉 transfer OWNER
+  if (role === "OWNER") {
+    const currentOwner = await WorkspaceMember.findOne({
+      workspaceId,
+      role: "OWNER",
     });
+
+    if (currentOwner && currentOwner._id.toString() !== memberId) {
+      currentOwner.role = "ADMIN";
+      await currentOwner.save();
+    }
+
+    member.role = "OWNER";
+    await member.save();
+
+    return {
+      newOwner: member,
+      oldOwner: currentOwner,
+    };
+  }
+
+  // normal role update
+  member.role = role;
+  await member.save();
+
+  return member;
 };
 
-const getAllWorkspaceMembers = async () => {
-    return await WorkspaceMember.find({}).sort({ createdAt: -1 });
+export const removeMember = async ({ workspaceId, memberId }) => {
+  const member = await WorkspaceMember.findOne({
+    _id: memberId,
+    workspaceId,
+  });
+
+  if (!member) {
+    throw new Error("Member not found in this workspace");
+  }
+
+  if (member.role === "OWNER") {
+    throw new Error("Cannot remove OWNER");
+  }
+
+  await WorkspaceMember.deleteOne({
+    _id: memberId,
+    workspaceId,
+  });
+
+  return true;
 };
 
-const getWorkspaceMemberById = async (id) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace member id');
-    }
+/**
+ * Leave workspace
+ */
+export const leaveWorkspace = async ({ workspaceId, userId }) => {
+  const member = await WorkspaceMember.findOne({
+    workspaceId,
+    userId,
+  });
 
-    const workspaceMember = await WorkspaceMember.findById(id);
+  if (!member) {
+    throw new Error("Not a member");
+  }
 
-    if (!workspaceMember) {
-        const error = new Error('Workspace member not found');
-        error.statusCode = 404;
-        throw error;
-    }
+  if (member.role === "OWNER") {
+    throw new Error("Owner cannot leave workspace");
+  }
 
-    return workspaceMember;
+  await WorkspaceMember.deleteOne({ _id: member._id });
+
+  return true;
 };
 
-const updateWorkspaceMember = async (id, data) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace member id');
-    }
+/**
+ * Add member
+ */
+export const addMember = async ({
+  workspaceId,
+  userId,
+  role = "VIEWER",
+  invitedBy,
+}) => {
+  const exists = await WorkspaceMember.findOne({
+    workspaceId,
+    userId,
+  });
 
-    const workspaceMember = await WorkspaceMember.findById(id);
+  if (exists) {
+    throw new Error("User already in workspace");
+  }
 
-    if (!workspaceMember) {
-        const error = new Error('Workspace member not found');
-        error.statusCode = 404;
-        throw error;
-    }
-
-    if (data.workspaceId !== undefined) {
-        if (!isValidObjectId(data.workspaceId)) {
-            throw buildValidationError('Invalid workspaceId');
-        }
-        workspaceMember.workspaceId = data.workspaceId;
-    }
-
-    if (data.userId !== undefined) {
-        if (!isValidObjectId(data.userId)) {
-            throw buildValidationError('Invalid userId');
-        }
-        workspaceMember.userId = data.userId;
-    }
-
-    if (data.role !== undefined) workspaceMember.role = data.role;
-    if (data.joinedAt !== undefined) workspaceMember.joinedAt = data.joinedAt;
-
-    return await workspaceMember.save();
-};
-
-const deleteWorkspaceMember = async (id) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace member id');
-    }
-
-    const workspaceMember = await WorkspaceMember.findById(id);
-
-    if (!workspaceMember) {
-        const error = new Error('Workspace member not found');
-        error.statusCode = 404;
-        throw error;
-    }
-
-    await workspaceMember.deleteOne();
-    return { deleted: true };
-};
-
-export default {
-    createWorkspaceMember,
-    getAllWorkspaceMembers,
-    getWorkspaceMemberById,
-    updateWorkspaceMember,
-    deleteWorkspaceMember,
+  return WorkspaceMember.create({
+    workspaceId,
+    userId,
+    role,
+    invitedBy,
+  });
 };
