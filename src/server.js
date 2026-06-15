@@ -19,7 +19,12 @@ import subscriptionRoutes from "./route/subscriptionRoutes.js";
 import projectAssetRoutes from "./route/projectAssetRoutes.js";
 import workspaceInviteRoutes from "./route/workspaceInviteRoutes.js";
 import workspaceMemberRoutes from "./route/workspaceMemberRoutes.js";
+<<<<<<< HEAD
 import { startInviteCron } from "./jobs/inviteCron.js";
+=======
+
+import worldRoutes from './route/worldRoutes.js';
+>>>>>>> origin/feature/world-building
 // Load environment variables
 dotenv.config();
 
@@ -66,7 +71,12 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/project-assets", projectAssetRoutes);
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
+<<<<<<< HEAD
 app.use("/test", testRoutes);
+=======
+app.use('/api/worlds', worldRoutes);
+app.use("/test",testRoutes);
+>>>>>>> origin/feature/world-building
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
