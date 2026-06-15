@@ -20,6 +20,8 @@ import subscriptionRoutes from "./route/subscriptionRoutes.js";
 import projectAssetRoutes from "./route/projectAssetRoutes.js";
 import workspaceInviteRoutes from "./route/workspaceInviteRoutes.js";
 import workspaceMemberRoutes from "./route/workspaceMemberRoutes.js";
+
+import worldRoutes from './route/worldRoutes.js';
 // Load environment variables
 dotenv.config();
 
@@ -66,6 +68,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/project-assets", projectAssetRoutes);
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
+app.use('/api/worlds', worldRoutes);
 app.use("/test",testRoutes);
 // Health check route
 app.get("/", (req, res) => {
