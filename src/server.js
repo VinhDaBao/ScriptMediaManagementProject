@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import './config/redis.js'; 
-import User from "./models/user.js";
+import './config/redis.js';
 
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
@@ -20,6 +19,7 @@ import subscriptionRoutes from "./route/subscriptionRoutes.js";
 import projectAssetRoutes from "./route/projectAssetRoutes.js";
 import workspaceInviteRoutes from "./route/workspaceInviteRoutes.js";
 import workspaceMemberRoutes from "./route/workspaceMemberRoutes.js";
+import { startInviteCron } from "./jobs/inviteCron.js";
 // Load environment variables
 dotenv.config();
 
@@ -66,7 +66,7 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/project-assets", projectAssetRoutes);
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
-app.use("/test",testRoutes);
+app.use("/test", testRoutes);
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
@@ -85,4 +85,5 @@ app.listen(PORT, () => {
     console.log(`>>> SMM Project API is running on port: ${PORT}`);
 
     console.log("--------------------------------------------------");
+    startInviteCron();
 });

@@ -138,6 +138,8 @@ const cancelInvite = async (token) => {
 export const getInvitesByWorkspace = async (workspaceId) => {
   const invites = await WorkspaceInvite.find({
     workspaceId,
+    status: "PENDING",
+    expiresAt: { $gt: new Date() },
   }).sort({ createdAt: -1 });
 
   return invites;
