@@ -86,7 +86,7 @@ export const getInviteByToken = async (req, res) => {
     const invite = await inviteService.getInviteByToken(
       req.params.token
     );
-
+    console.log("Invite found:", invite);
     res.json(invite);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -115,5 +115,20 @@ export const cancelInvite = async (req, res) => {
     res.json(invite);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+};
+export const getInvitesByWorkspace = async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+
+    const invites = await inviteService.getInvitesByWorkspace(workspaceId);
+
+    return res.status(200).json({
+      errCode: 0,
+      message: "Get invites success",
+      data: invites,
+    });
+  } catch (error) {
+    return sendError(res, error);
   }
 };

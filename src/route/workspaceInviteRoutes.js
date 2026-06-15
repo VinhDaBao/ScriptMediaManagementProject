@@ -4,6 +4,7 @@ import {
   getInviteByToken,
   acceptInvite,
   cancelInvite,
+  getInvitesByWorkspace
 } from "../controller/workspaceInviteController.js";
 
 import auth from "../middlewares/authMiddleware.js";
@@ -15,8 +16,13 @@ router.post("/invite", auth,  authorizeWorkspace("OWNER"), inviteUser);
 
 router.get("/invite/:token", getInviteByToken);
 
-router.post("/invite/accept", auth, acceptInvite);
+router.post("/accept", auth, acceptInvite);
 
 router.delete("/invite/:token", auth,  authorizeWorkspace("OWNER"), cancelInvite);
-
+router.get(
+  "/workspace/:workspaceId",
+  auth,
+  authorizeWorkspace("OWNER"),
+  getInvitesByWorkspace
+);
 export default router;

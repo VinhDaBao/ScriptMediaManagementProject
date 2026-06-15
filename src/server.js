@@ -7,6 +7,7 @@ import User from "./models/user.js";
 import connectDB from "./config/configdb.js";
 import authRoutes from "./route/authRoutes.js";
 import testRoutes from "./route/testRoutes.js";
+import assetRoutes from "./route/assetRoutes.js";
 import workspaceRoutes from "./route/workspaceRoutes.js";
 import projectRoutes from "./route/projectRoutes.js";
 import characterRoutes from "./route/characterRoutes.js";

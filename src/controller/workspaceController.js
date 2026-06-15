@@ -1,4 +1,5 @@
 import workspaceService from '../services/workspaceService.js';
+import WorkspaceMember from "../models/WorkspaceMember.js";
 
 const sendError = (res, error) => {
     const statusCode = error.statusCode || 500;

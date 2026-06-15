@@ -13,7 +13,6 @@ const mediaSchema = new mongoose.Schema(
       type: String,
       enum: ["IMAGE", "VIDEO", "AUDIO", "FILE"],
       required: true,
-      index: true,
     },
 
     url: {
@@ -32,25 +31,23 @@ const mediaSchema = new mongoose.Schema(
     },
 
     fileSize: {
-      type: Number, // bytes
+      type: Number,
     },
 
     duration: {
-      type: Number, 
+      type: Number,
     },
 
     tags: [
       {
         type: String,
         trim: true,
-        index: true,
       },
     ],
 
     isFavorite: {
       type: Boolean,
       default: false,
-      index: true,
     },
   },
   {
