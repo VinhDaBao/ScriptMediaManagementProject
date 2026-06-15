@@ -10,7 +10,7 @@ const sendError = (res, error) => {
 
 const createWorkspace = async (req, res) => {
     try {
-        const workspace = await workspaceService.createWorkspace(req.body);
+        const workspace = await workspaceService.createWorkspace(req.body, req.user?.id);
         return res.status(201).json({ errCode: 0, message: 'Workspace created successfully', data: workspace });
     } catch (error) {
         return sendError(res, error);
@@ -19,7 +19,7 @@ const createWorkspace = async (req, res) => {
 
 const getAllWorkspaces = async (req, res) => {
     try {
-        const workspaces = await workspaceService.getAllWorkspaces();
+        const workspaces = await workspaceService.getAllWorkspaces(req.user?.id);
         return res.status(200).json({ errCode: 0, message: 'Workspaces fetched successfully', data: workspaces });
     } catch (error) {
         return sendError(res, error);

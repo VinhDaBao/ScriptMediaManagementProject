@@ -1,123 +1,89 @@
-import mongoose from 'mongoose';
-import WorkspaceInvite from '../models/workspaceinvite.js';
+import crypto from "crypto";
+import WorkspaceInvite from "../models/WorkspaceInvite.js";
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+const generateToken = () =>
+  crypto.randomBytes(32).toString("hex");
 
-const buildValidationError = (message) => {
-    const error = new Error(message);
-    error.statusCode = 400;
-    return error;
+const isValidObjectId = (id) =>
+  mongoose.Types.ObjectId.isValid(id);
+
+const createInvite = async ({ workspaceId, email, role, expiresAt }) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = await WorkspaceInvite.findOne({
+    workspaceId,
+    email: normalizedEmail,
+    status: "PENDING",
+    expiresAt: { $gt: new Date() },
+  });
+
+  if (existing) {
+    throw new Error("Pending invite already exists");
+  }
+
+  return WorkspaceInvite.create({
+    workspaceId,
+    email: normalizedEmail,
+    role: role || "VIEWER",
+    token: generateToken(),
+    status: "PENDING",
+    expiresAt,
+  });
 };
 
-const createWorkspaceInvite = async (data) => {
-    const requiredFields = ['workspaceId', 'email', 'token', 'expiresAt'];
-    const missingField = requiredFields.find((field) => !data?.[field]);
+const getInviteByToken = async (token) => {
+  const invite = await WorkspaceInvite.findOne({ token }).populate(
+    "workspaceId"
+  );
 
-    if (missingField) {
-        throw buildValidationError(`Missing required field: ${missingField}`);
-    }
+  if (!invite) throw new Error("Invite not found");
 
-    if (!isValidObjectId(data.workspaceId)) {
-        throw buildValidationError('Invalid workspaceId');
-    }
+  if (invite.status !== "PENDING" || invite.expiresAt < new Date()) {
+    throw new Error("Invite expired");
+  }
 
-    const normalizedEmail = String(data.email).trim().toLowerCase();
-
-    const existingToken = await WorkspaceInvite.findOne({ token: data.token });
-    if (existingToken) {
-        throw buildValidationError('Workspace invite token already exists');
-    }
-
-    const existingPendingInvite = await WorkspaceInvite.findOne({
-        workspaceId: data.workspaceId,
-        email: normalizedEmail,
-        status: 'PENDING',
-    });
-
-    if (existingPendingInvite) {
-        throw buildValidationError('Pending workspace invite already exists for this email');
-    }
-
-    return await WorkspaceInvite.create({
-        workspaceId: data.workspaceId,
-        email: normalizedEmail,
-        role: data.role ?? 'VIEWER',
-        token: data.token,
-        status: data.status ?? 'PENDING',
-        expiresAt: data.expiresAt,
-    });
+  return invite;
 };
 
-const getAllWorkspaceInvites = async () => {
-    return await WorkspaceInvite.find({}).sort({ createdAt: -1 });
+const acceptInvite = async ({ token, user }) => {
+  const invite = await WorkspaceInvite.findOne({ token });
+
+  if (!invite) throw new Error("Invite not found");
+
+  if (invite.status !== "PENDING") {
+    throw new Error("Invalid invite");
+  }
+
+  if (invite.expiresAt < new Date()) {
+    invite.status = "EXPIRED";
+    await invite.save();
+    throw new Error("Invite expired");
+  }
+
+  if (user.email !== invite.email) {
+    throw new Error("Email mismatch");
+  }
+
+  invite.status = "ACCEPTED";
+  await invite.save();
+
+  return invite;
 };
 
-const getWorkspaceInviteById = async (id) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace invite id');
-    }
+const cancelInvite = async (token) => {
+  const invite = await WorkspaceInvite.findOne({ token });
 
-    const workspaceInvite = await WorkspaceInvite.findById(id);
+  if (!invite) throw new Error("Invite not found");
 
-    if (!workspaceInvite) {
-        const error = new Error('Workspace invite not found');
-        error.statusCode = 404;
-        throw error;
-    }
+  invite.status = "EXPIRED";
+  await invite.save();
 
-    return workspaceInvite;
-};
-
-const updateWorkspaceInvite = async (id, data) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace invite id');
-    }
-
-    const workspaceInvite = await WorkspaceInvite.findById(id);
-
-    if (!workspaceInvite) {
-        const error = new Error('Workspace invite not found');
-        error.statusCode = 404;
-        throw error;
-    }
-
-    if (data.workspaceId !== undefined) {
-        if (!isValidObjectId(data.workspaceId)) {
-            throw buildValidationError('Invalid workspaceId');
-        }
-        workspaceInvite.workspaceId = data.workspaceId;
-    }
-
-    if (data.email !== undefined) workspaceInvite.email = String(data.email).trim().toLowerCase();
-    if (data.role !== undefined) workspaceInvite.role = data.role;
-    if (data.token !== undefined) workspaceInvite.token = data.token;
-    if (data.status !== undefined) workspaceInvite.status = data.status;
-    if (data.expiresAt !== undefined) workspaceInvite.expiresAt = data.expiresAt;
-
-    return await workspaceInvite.save();
-};
-
-const deleteWorkspaceInvite = async (id) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace invite id');
-    }
-
-    const workspaceInvite = await WorkspaceInvite.findById(id);
-
-    if (!workspaceInvite) {
-        const error = new Error('Workspace invite not found');
-        error.statusCode = 404;
-        throw error;
-    }
-
-    await workspaceInvite.deleteOne();
-    return { deleted: true };
+  return invite;
 };
 
 export default {
-    createWorkspaceInvite,
-    getAllWorkspaceInvites,
-    getWorkspaceInviteById,
-    updateWorkspaceInvite,
-    deleteWorkspaceInvite,
+  createInvite,
+  getInviteByToken,
+  acceptInvite,
+  cancelInvite,
 };

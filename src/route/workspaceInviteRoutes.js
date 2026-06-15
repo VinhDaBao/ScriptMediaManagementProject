@@ -1,12 +1,22 @@
-import express from 'express';
-import workspaceInviteController from '../controller/workspaceInviteController.js';
+import express from "express";
+import {
+  inviteUser,
+  getInviteByToken,
+  acceptInvite,
+  cancelInvite,
+} from "../controller/workspaceInviteController.js";
 
+import auth from "../middlewares/authMiddleware.js";
+import { authorizeWorkspace } from "../middlewares/authorMiddleware.js";
 const router = express.Router();
 
-router.post('/', workspaceInviteController.createWorkspaceInvite);
-router.get('/', workspaceInviteController.getAllWorkspaceInvites);
-router.get('/:id', workspaceInviteController.getWorkspaceInviteById);
-router.put('/:id', workspaceInviteController.updateWorkspaceInvite);
-router.delete('/:id', workspaceInviteController.deleteWorkspaceInvite);
+
+router.post("/invite", auth,  authorizeWorkspace("OWNER"), inviteUser);
+
+router.get("/invite/:token", getInviteByToken);
+
+router.post("/invite/accept", auth, acceptInvite);
+
+router.delete("/invite/:token", auth,  authorizeWorkspace("OWNER"), cancelInvite);
 
 export default router;
