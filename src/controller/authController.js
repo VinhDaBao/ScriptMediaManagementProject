@@ -37,24 +37,41 @@ export const verifyOTP = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const errors = validationResult(req);
-        if (!errors.isEmpty()) return res.status(400).json(errors);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                message: "Tài khoản hoặc mật khẩu không chính xác!"
+            });
+        }
 
         const { email, password } = req.body;
+
         const user = await loginService(email, password);
-        
-        // Tạo cả 2 token
+
+        if (user.isActivated === false) {
+            return res.status(403).json({
+                message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ hỗ trợ!'
+            });
+        }
+
         const accessToken = jwtUtil.generateToken(user);
         const refreshToken = jwtUtil.generateRefreshToken(user);
 
-        // Lưu Refresh Token vào Redis với thời hạn 7 ngày (604800 giây)
-        await redisClient.setEx(`refresh_token:${user.id}`, 604800, refreshToken);
+        await redisClient.setEx(
+            `refresh_token:${user.id}`,
+            604800,
+            refreshToken
+        );
 
-        const redirectUrl = user.role === "admin" ? "/admin/profile" : "/user/profile";
+        const redirectUrl =
+            user.role === "admin"
+                ? "/admin/profile"
+                : "/user/profile";
 
         return res.json({
             message: 'Login success',
             accessToken,
-            refreshToken, 
+            refreshToken,
             redirectUrl,
             user: {
                 id: user.id,
@@ -64,9 +81,10 @@ export const login = async (req, res) => {
                 avatar: user.avatar
             }
         });
-
     } catch (error) {
-        return res.status(401).json({ message: error.message });
+        return res.status(400).json({
+            message: "Tài khoản hoặc mật khẩu không chính xác!"
+        });
     }
 };
 

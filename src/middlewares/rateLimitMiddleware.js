@@ -1,14 +1,13 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit from 'express-rate-limit';
 
 const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 phút
+    max: 5, 
+    message: { 
+        message: "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút!" 
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
-    windowMs: 60 * 1000,
-
-    max: 5,
-
-    message: {
-        message: 'Too many login attempts'
-    }
-})
-
-export default loginLimiter
+export default loginLimiter;

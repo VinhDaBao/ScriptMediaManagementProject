@@ -1,4 +1,5 @@
 import userService from "../services/userService.js";
+import User from "../models/user.js";
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -33,9 +34,36 @@ const handleEditProfile = async (req, res) => {
     }
 };
 
+const handleToggleUserStatus = async (req, res) => {
+    try {
+        const { targetUserId } = req.body;
+        
+        const user = await User.findById(targetUserId);
+        if (!user) {
+            return res.status(404).json({ errCode: 1, message: 'Không tìm thấy người dùng này!' });
+        }
+        
+        if (user.role === 'admin') {
+            return res.status(403).json({ errCode: 2, message: 'Không thể khóa tài khoản của Admin khác!' });
+        }
+
+        // Đảo ngược trạng thái (Đang true thì thành false, đang false thì thành true)
+        user.isActivated = !user.isActivated; 
+        await user.save();
+
+        const statusMessage = user.isActivated ? "Đã mở khóa tài khoản thành công!" : "Đã khóa tài khoản thành công!";
+        return res.status(200).json({ errCode: 0, message: statusMessage, isActivated: user.isActivated });
+
+    } catch (error) {
+        console.error("Lỗi khóa tài khoản:", error);
+        return res.status(500).json({ errCode: -1, message: 'Lỗi server khi cập nhật trạng thái User' });
+    }
+};
+
 export default {
     handleForgotPassword,
     handleVerifyForgotPasswordOTP,
     handleResetPassword,
-    handleEditProfile
+    handleEditProfile,
+    handleToggleUserStatus
 };

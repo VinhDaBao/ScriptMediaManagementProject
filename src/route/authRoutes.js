@@ -44,12 +44,58 @@ router.get('/admin/profile', authMiddleware, authorizeRole('admin'), async (req,
 
 router.get('/all-users', authMiddleware, authorizeRole('admin'), async (req, res) => {
     try {
-        const users = await User.find({ role: 'user' }).select('-password');
-        res.json({ errCode: 0, users: users });
+        const searchQuery = req.query.search || '';
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const sortBy = req.query.sortBy || 'createdAt';
+        const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+
+        let query = { role: 'user' };
+
+        if (searchQuery) {
+            query.$or = [
+                { email: { $regex: searchQuery, $options: 'i' } },
+                { fullName: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
+
+        const sortConfig = {
+            [sortBy]: sortOrder
+        };
+
+        const skip = (page - 1) * limit;
+
+        const [users, totalUsers] = await Promise.all([
+            User.find(query)
+                .select('-password')
+                .sort(sortConfig)
+                .skip(skip)
+                .limit(limit),
+            User.countDocuments(query)
+        ]);
+
+        res.json({
+            errCode: 0,
+            data: {
+                users,
+                pagination: {
+                    currentPage: page,
+                    pageSize: limit,
+                    totalItems: totalUsers,
+                    totalPages: Math.ceil(totalUsers / limit)
+                }
+            }
+        });
     } catch (error) {
-        res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+        console.error('Lỗi lấy danh sách user:', error);
+        res.status(500).json({
+            errCode: 1,
+            message: 'Lỗi server'
+        });
     }
 });
+
+router.post('/toggle-user-status', authMiddleware, authorizeRole('admin'), userController.default.handleToggleUserStatus);
 
 router.post('/forgot-password', userController.default.handleForgotPassword);
 router.post('/verify-forgot-password-otp', userController.default.handleVerifyForgotPasswordOTP);
