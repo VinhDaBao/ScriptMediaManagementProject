@@ -26,6 +26,9 @@ import activityLogRoutes from "./route/activityLogRoutes.js";
 import { startInviteCron } from "./jobs/inviteCron.js";
 import hocuspocusServer from "./config/hocuspocus.js";
 
+import { startInviteCron } from "./jobs/inviteCron.js";
+
+import worldRoutes from './route/worldRoutes.js';
 // Load environment variables
 dotenv.config();
 
@@ -76,8 +79,8 @@ app.use("/api/subscriptions", subscriptionRoutes);
 app.use("/api/workspaces/:workspaceId/projects/:projectId/project-assets", projectAssetRoutes);
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
-app.use("/test", testRoutes);
-
+app.use('/api/worlds', worldRoutes);
+app.use("/test",testRoutes);
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
