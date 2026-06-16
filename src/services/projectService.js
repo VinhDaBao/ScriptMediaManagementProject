@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Project from '../models/project.js';
 import Block from '../models/block.js';
+import ProjectAsset from '../models/projectAsset.js';
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -141,16 +142,30 @@ const duplicateProject = async (projectId, userId) => {
     // Load original blocks
     const originalBlocks = await Block.find({ projectId }).sort({ position: 1 });
 
-    // Duplicate blocks
+    // Duplicate blocks with deep copy of content field
     const duplicatedBlocks = originalBlocks.map((b) => ({
         projectId: duplicate._id,
         type: b.type,
         position: b.position,
-        content: b.content,
+        content: b.content && typeof b.content === 'object' ? JSON.parse(JSON.stringify(b.content)) : b.content,
     }));
 
     if (duplicatedBlocks.length > 0) {
         await Block.insertMany(duplicatedBlocks);
+    }
+
+    // Duplicate project asset associations
+    const originalProjectAssets = await ProjectAsset.find({ projectId });
+    const duplicatedProjectAssets = originalProjectAssets.map((pa) => ({
+        projectId: duplicate._id,
+        assetId: pa.assetId,
+        status: pa.status,
+        usageCount: pa.usageCount,
+        lastUsedAt: pa.lastUsedAt,
+    }));
+
+    if (duplicatedProjectAssets.length > 0) {
+        await ProjectAsset.insertMany(duplicatedProjectAssets);
     }
 
     return duplicate;

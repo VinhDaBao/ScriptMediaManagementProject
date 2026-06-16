@@ -1,6 +1,7 @@
 import projectSnapshotService from '../services/projectSnapshotService.js';
 
 const sendError = (res, error) => {
+  console.error("Snapshot Controller Error:", error);
   const statusCode = error.statusCode || 500;
   return res.status(statusCode).json({ errCode: 1, message: error.message || 'Internal server error' });
 };
@@ -8,7 +9,7 @@ const sendError = (res, error) => {
 const createSnapshot = async (req, res) => {
   try {
     const { projectId } = req.params;
-    const { title, changeSummary } = req.body;
+    const { title, changeSummary } = req.body || {};
     const snapshot = await projectSnapshotService.createSnapshot({
       projectId,
       title,
