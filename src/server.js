@@ -25,9 +25,6 @@ import projectSnapshotRoutes from "./route/projectSnapshotRoutes.js";
 import activityLogRoutes from "./route/activityLogRoutes.js";
 import { startInviteCron } from "./jobs/inviteCron.js";
 import hocuspocusServer from "./config/hocuspocus.js";
-
-import { startInviteCron } from "./jobs/inviteCron.js";
-
 import worldRoutes from './route/worldRoutes.js';
 // Load environment variables
 dotenv.config();
