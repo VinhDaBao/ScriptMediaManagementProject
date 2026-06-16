@@ -12,13 +12,13 @@ import { authorizeWorkspace } from "../middlewares/authorMiddleware.js";
 const router = express.Router();
 
 
-router.post("/invite", auth,  authorizeWorkspace("OWNER"), inviteUser);
+router.post("/:workspaceId/invite", auth,  authorizeWorkspace("OWNER"), inviteUser);
 
 router.get("/invite/:token", getInviteByToken);
 
 router.post("/accept", auth, acceptInvite);
 
-router.delete("/invite/:token", auth,  authorizeWorkspace("OWNER"), cancelInvite);
+router.delete("/:workspaceId/invite/:token", auth,  authorizeWorkspace("OWNER"), cancelInvite);
 router.get(
   "/workspace/:workspaceId",
   auth,

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Project from '../models/project.js';
+import Block from '../models/block.js';
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -9,7 +10,7 @@ const buildValidationError = (message) => {
     return error;
 };
 
-const createProject = async (data) => {
+const createProject = async (data, userId) => {
     const requiredFields = ['workspaceId', 'title'];
     const missingField = requiredFields.find((field) => !data?.[field]);
 
@@ -21,17 +22,29 @@ const createProject = async (data) => {
         throw buildValidationError('Invalid workspaceId');
     }
 
+    if (!userId || !isValidObjectId(userId)) {
+        throw buildValidationError('Invalid user id for creation');
+    }
+
     return await Project.create({
         workspaceId: data.workspaceId,
         title: data.title,
         description: data.description ?? '',
         status: data.status ?? 'IDEA',
         tags: Array.isArray(data.tags) ? data.tags : [],
+        createdBy: userId,
+        lastEditedBy: userId,
     });
 };
 
-const getAllProjects = async () => {
-    return await Project.find({}).sort({ createdAt: -1 });
+const getAllProjects = async (workspaceId) => {
+    if (!workspaceId) {
+        throw buildValidationError('workspaceId is required');
+    }
+    if (!isValidObjectId(workspaceId)) {
+        throw buildValidationError('Invalid workspaceId');
+    }
+    return await Project.find({ workspaceId }).sort({ createdAt: -1 });
 };
 
 const getProjectById = async (id) => {
@@ -50,7 +63,7 @@ const getProjectById = async (id) => {
     return project;
 };
 
-const updateProject = async (id, data) => {
+const updateProject = async (id, data, userId) => {
     if (!isValidObjectId(id)) {
         throw buildValidationError('Invalid project id');
     }
@@ -75,6 +88,10 @@ const updateProject = async (id, data) => {
     if (data.status !== undefined) project.status = data.status;
     if (data.tags !== undefined) project.tags = Array.isArray(data.tags) ? data.tags : [];
 
+    if (userId) {
+        project.lastEditedBy = userId;
+    }
+
     return await project.save();
 };
 
@@ -91,8 +108,52 @@ const deleteProject = async (id) => {
         throw error;
     }
 
+    // Delete associated blocks when project is deleted
+    await Block.deleteMany({ projectId: id });
+
     await project.deleteOne();
     return { deleted: true };
+};
+
+const duplicateProject = async (projectId, userId) => {
+    if (!isValidObjectId(projectId)) {
+        throw buildValidationError('Invalid project id');
+    }
+
+    const original = await Project.findById(projectId);
+    if (!original) {
+        const error = new Error('Project not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    // Duplicate project metadata
+    const duplicate = await Project.create({
+        workspaceId: original.workspaceId,
+        title: `${original.title} (Copy)`,
+        description: original.description,
+        status: original.status,
+        tags: original.tags,
+        createdBy: userId,
+        lastEditedBy: userId,
+    });
+
+    // Load original blocks
+    const originalBlocks = await Block.find({ projectId }).sort({ position: 1 });
+
+    // Duplicate blocks
+    const duplicatedBlocks = originalBlocks.map((b) => ({
+        projectId: duplicate._id,
+        type: b.type,
+        position: b.position,
+        content: b.content,
+    }));
+
+    if (duplicatedBlocks.length > 0) {
+        await Block.insertMany(duplicatedBlocks);
+    }
+
+    return duplicate;
 };
 
 export default {
@@ -101,4 +162,5 @@ export default {
     getProjectById,
     updateProject,
     deleteProject,
+    duplicateProject,
 };

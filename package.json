@@ -11,6 +11,7 @@
     "start": "nodemon --exec babel-node src/server.js"
   },
   "dependencies": {
+    "@hocuspocus/server": "^4.2.0",
     "@tailwindcss/vite": "^4.3.0",
     "bcryptjs": "^3.0.3",
     "body-parser": "^2.2.2",
@@ -30,6 +31,7 @@
     "nodemailer": "^8.0.7",
     "redis": "^6.0.0",
     "sequelize": "^6.37.8",
+    "socket.io": "^4.8.3",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {

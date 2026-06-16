@@ -30,8 +30,14 @@ const createCharacter = async (data) => {
     });
 };
 
-const getAllCharacters = async () => {
-    return await Character.find({}).sort({ createdAt: -1 });
+const getAllCharacters = async (workspaceId) => {
+    if (!workspaceId) {
+        throw buildValidationError('workspaceId is required');
+    }
+    if (!isValidObjectId(workspaceId)) {
+        throw buildValidationError('Invalid workspaceId');
+    }
+    return await Character.find({ workspaceId }).sort({ createdAt: -1 });
 };
 
 const getCharacterById = async (id) => {
@@ -78,27 +84,9 @@ const updateCharacter = async (id, data) => {
     return await character.save();
 };
 
-const deleteCharacter = async (id) => {
-    if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid character id');
-    }
-
-    const character = await Character.findById(id);
-
-    if (!character) {
-        const error = new Error('Character not found');
-        error.statusCode = 404;
-        throw error;
-    }
-
-    await character.deleteOne();
-    return { deleted: true };
-};
-
 export default {
     createCharacter,
     getAllCharacters,
     getCharacterById,
     updateCharacter,
-    deleteCharacter,
 };

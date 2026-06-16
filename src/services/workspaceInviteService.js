@@ -1,8 +1,8 @@
 import crypto from "crypto";
-import WorkspaceInvite from "../models/WorkspaceInvite.js";
-import Workspace from "../models/Workspace.js";
-import User from "../models/User.js";
-import WorkspaceMember from "../models/WorkspaceMember.js";
+import WorkspaceInvite from "../models/workspaceinvite.js";
+import WorkspaceMember from "../models/workspacemember.js";
+import mongoose from "mongoose";
+import User from "../models/user.js";
 
 const generateToken = () =>
   crypto.randomBytes(32).toString("hex");
