@@ -1,5 +1,6 @@
 import workspaceService from '../services/workspaceService.js';
-import WorkspaceMember from "../models/WorkspaceMember.js";
+import WorkspaceMember from "../models/workspacemember.js";
+import notificationService from '../services/notificationService.js';
 
 const sendError = (res, error) => {
     const statusCode = error.statusCode || 500;
@@ -39,6 +40,20 @@ const getWorkspaceById = async (req, res) => {
 const updateWorkspace = async (req, res) => {
     try {
         const workspace = await workspaceService.updateWorkspace(req.params.id, req.body);
+
+        // Send workspace update notification
+        try {
+            await notificationService.sendNotificationToWorkspace({
+                workspaceId: req.params.id,
+                type: "WORKSPACE",
+                title: "Workspace Updated",
+                message: `Workspace "${workspace.name}" has been updated.`,
+                excludeUserId: req.user?.id
+            });
+        } catch (notiError) {
+            console.error("Failed to send workspace update notification:", notiError);
+        }
+
         return res.status(200).json({ errCode: 0, message: 'Workspace updated successfully', data: workspace });
     } catch (error) {
         return sendError(res, error);
@@ -47,7 +62,22 @@ const updateWorkspace = async (req, res) => {
 
 const deleteWorkspace = async (req, res) => {
     try {
-        await workspaceService.deleteWorkspace(req.params.id);
+        const workspaceId = req.params.id;
+
+        // Notify workspace members before deletion
+        try {
+            await notificationService.sendNotificationToWorkspace({
+                workspaceId,
+                type: "WORKSPACE",
+                title: "Workspace Deleted",
+                message: "A workspace you were in has been deleted.",
+                excludeUserId: req.user?.id
+            });
+        } catch (notiError) {
+            console.error("Failed to send workspace delete notification:", notiError);
+        }
+
+        await workspaceService.deleteWorkspace(workspaceId);
         return res.status(200).json({ errCode: 0, message: 'Workspace deleted successfully' });
     } catch (error) {
         return sendError(res, error);

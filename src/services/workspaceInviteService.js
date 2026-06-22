@@ -3,6 +3,7 @@ import WorkspaceInvite from "../models/workspaceinvite.js";
 import WorkspaceMember from "../models/workspacemember.js";
 import mongoose from "mongoose";
 import User from "../models/user.js";
+import notificationService from "./notificationService.js";
 
 const generateToken = () =>
   crypto.randomBytes(32).toString("hex");
@@ -36,7 +37,7 @@ export const createInvite = async ({ workspaceId, email, role, expiresAt }) => {
   }
 
   // 3. create invite
-  return WorkspaceInvite.create({
+  const invite = await WorkspaceInvite.create({
     workspaceId,
     email: normalizedEmail,
     role: role || "VIEWER",
@@ -44,6 +45,25 @@ export const createInvite = async ({ workspaceId, email, role, expiresAt }) => {
     status: "PENDING",
     expiresAt,
   });
+
+  // 4. Send notification if user exists
+  try {
+    const targetUser = await User.findOne({ email: normalizedEmail });
+    if (targetUser) {
+      await notificationService.sendNotificationToUser({
+        userId: targetUser._id,
+        workspaceId,
+        type: "WORKSPACE",
+        title: "Workspace Invitation",
+        message: "You have been invited to join a workspace. Click to accept the invite.",
+        navigate: `/invite/${invite.token}`
+      });
+    }
+  } catch (notiError) {
+    console.error("Failed to send invite notification:", notiError);
+  }
+
+  return invite;
 };
 const getInviteByToken = async (token) => {
   const invite = await WorkspaceInvite.findOne({ token })

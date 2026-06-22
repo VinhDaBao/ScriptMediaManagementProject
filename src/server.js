@@ -26,6 +26,8 @@ import activityLogRoutes from "./route/activityLogRoutes.js";
 import { startInviteCron } from "./jobs/inviteCron.js";
 import hocuspocusServer from "./config/hocuspocus.js";
 import worldRoutes from './route/worldRoutes.js';
+import socketService from "./services/socketService.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -96,13 +98,9 @@ const io = new Server(server, {
   }
 });
 
-io.on("connection", (socket) => {
-  console.log(`[Socket] User connected: ${socket.id}`);
-  
-  socket.on("disconnect", () => {
-    console.log(`[Socket] User disconnected: ${socket.id}`);
-  });
-});
+// Initialize socket service
+socketService.init(io);
+app.set("io", io);
 
 server.listen(PORT, () => {
     console.log("--------------------------------------------------");
