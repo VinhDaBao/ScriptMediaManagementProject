@@ -27,6 +27,7 @@ import { startInviteCron } from "./jobs/inviteCron.js";
 import hocuspocusServer from "./config/hocuspocus.js";
 import worldRoutes from './route/worldRoutes.js';
 import socketService from "./services/socketService.js";
+import ttsRoutes from "./route/ttsRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -79,6 +80,7 @@ app.use("/api/workspaces/:workspaceId/projects/:projectId/project-assets", proje
 app.use("/api/workspace-invites", workspaceInviteRoutes);
 app.use("/api/workspace-members", workspaceMemberRoutes);
 app.use('/api/worlds', worldRoutes);
+app.use('/api/tts', ttsRoutes);
 app.use("/test",testRoutes);
 // Health check route
 app.get("/", (req, res) => {
