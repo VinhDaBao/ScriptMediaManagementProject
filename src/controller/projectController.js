@@ -1,5 +1,6 @@
 import projectService from '../services/projectService.js';
 import activityLogService from '../services/activityLogService.js';
+import notificationService from '../services/notificationService.js';
 
 const sendError = (res, error) => {
     const statusCode = error.statusCode || 500;
@@ -22,6 +23,20 @@ const createProject = async (req, res) => {
                 title: project.title,
             },
         });
+
+        // Send workspace project creation notification
+        try {
+            await notificationService.sendNotificationToWorkspace({
+                workspaceId: project.workspaceId,
+                type: "PROJECT",
+                title: "New Project Created",
+                message: `A new project "${project.title}" has been created.`,
+                navigate: `/projects/${project._id}`,
+                excludeUserId: req.user.id
+            });
+        } catch (notiError) {
+            console.error("Failed to send project creation notification:", notiError);
+        }
 
         return res.status(201).json({ errCode: 0, message: 'Project created successfully', data: project });
     } catch (error) {
@@ -87,6 +102,19 @@ const deleteProject = async (req, res) => {
                 title: project.title,
             },
         });
+
+        // Send workspace project deletion notification
+        try {
+            await notificationService.sendNotificationToWorkspace({
+                workspaceId: project.workspaceId,
+                type: "PROJECT",
+                title: "Project Deleted",
+                message: `The project "${project.title}" has been deleted.`,
+                excludeUserId: req.user.id
+            });
+        } catch (notiError) {
+            console.error("Failed to send project deletion notification:", notiError);
+        }
 
         return res.status(200).json({ errCode: 0, message: 'Project deleted successfully' });
     } catch (error) {

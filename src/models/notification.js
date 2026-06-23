@@ -33,6 +33,11 @@ const notificationSchema = new mongoose.Schema(
       default: "",
     },
 
+    navigate: {
+      type: String,
+      default: "",
+    },
+
     isRead: {
       type: Boolean,
       default: false,

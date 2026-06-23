@@ -1,58 +1,55 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const planSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
+const planSchema = new mongoose.Schema({
+  name: String,
+  price: Number,
 
-    price: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-
-    limits: {
-      workspace: {
-        type: Number,
-        default: 1,
-      },
-
-      projects: {
-        type: Number,
-        default: 5,
-      },
-
-      assets: {
-        type: Number,
-        default: 50,
-      },
-
-      worlds: {
-        type: Number,
-        default: 5,
-      },
-
-      members: {
-        type: Number,
-        default: 1,
-      },
-    },
-
-    features: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
+  limits: {
+    workspace: Number,
+    projects: Number,
+    assets: Number,
+    worlds: Number,
+    members: Number,
   },
-  {
-    timestamps: true,
-  }
-);
 
-const Plan = mongoose.model("Plan", planSchema);
+  features: {
+    tts: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
 
+      premiumVoice: {
+        type: Boolean,
+        default: false,
+      },
+
+      monthlyCharacterLimit: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    snapshots: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+
+      maxSnapshotsPerProject: {
+        type: Number,
+        default: 10,
+      },
+    },
+
+    collaboration: {
+      enabled: {
+        type: Boolean,
+        default: false,
+      },
+    },
+  },
+});
+
+const Plan = mongoose.model('Plan', planSchema);
 export default Plan;

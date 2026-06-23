@@ -14,20 +14,33 @@ const paymentSchema = new mongoose.Schema(
       ref: "Subscription",
     },
 
+    planId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Plan",
+      required: true,
+    },
+
     amount: {
       type: Number,
       required: true,
+      min: 0,
+    },
+
+    currency: {
+      type: String,
+      default: "VND",
     },
 
     method: {
       type: String,
       required: true,
+      trim: true,
     },
 
     status: {
       type: String,
-      enum: ["SUCCESS", "FAILED"],
-      default: "SUCCESS",
+      enum: ["PENDING", "SUCCESS", "FAILED", "REFUNDED"],
+      default: "PENDING",
       index: true,
     },
 
@@ -35,6 +48,19 @@ const paymentSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
+      trim: true,
+    },
+
+    planSnapshot: {
+      name: {
+        type: String,
+        required: true,
+      },
+
+      price: {
+        type: Number,
+        required: true,
+      },
     },
   },
   {
@@ -44,6 +70,8 @@ const paymentSchema = new mongoose.Schema(
 
 paymentSchema.index({ userId: 1, createdAt: -1 });
 paymentSchema.index({ subscriptionId: 1 });
+paymentSchema.index({ planId: 1 });
+paymentSchema.index({ transactionRef: 1 });
 
 const Payment = mongoose.model("Payment", paymentSchema);
 
