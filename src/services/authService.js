@@ -5,20 +5,16 @@ import mongoose from 'mongoose';
 export const registerUser = async (userData) => {
     const { email, password } = userData;
 
-    // 1. Kiểm tra email tồn tại
     const existingUser = await User.findOne({ email });
     if (existingUser) {
         throw new Error('Email đã được sử dụng.');
     }
 
-    // 2. Mã hóa mật khẩu (Lớp bảo mật dữ liệu)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Tạo mã OTP (6 chữ số ngẫu nhiên)
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpires = new Date(Date.now() + 10 * 60000); // 10 phút
+    const otpExpires = new Date(Date.now() + 10 * 60000);
 
-    // 4. Lưu người dùng tạm thời (isActivated: false)
     const newUser = await User.create({
         email,
         password: hashedPassword,
@@ -27,7 +23,6 @@ export const registerUser = async (userData) => {
         isActivated: false
     });
 
-    // 5. Gửi email chứa OTP
     await sendOTP(email, otp);
 
     return newUser;
@@ -61,7 +56,6 @@ export const loginService = async (email, password) => {
         throw new Error('User not found');
     }
 
-    // THÊM ĐOẠN NÀY: Kiểm tra xem tài khoản đã kích hoạt OTP chưa
     if (user.isActivated === false) {
         throw new Error('Tài khoản của bạn chưa được kích hoạt bằng mã OTP!');
     }

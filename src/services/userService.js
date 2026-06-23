@@ -85,15 +85,12 @@ const handleUpdateProfile = (currentUser, data) => {
                 });
             }
 
-            // UPDATE FULL NAME
             if (data.fullName) {
                 user.fullName = data.fullName;
             }
 
-            // UPDATE AVATAR
             if (data.avatar) {
 
-                // ================= XÓA ẢNH CŨ =================
                 if (user.avatar) {
 
                     const oldImagePath = path.join(
@@ -102,13 +99,10 @@ const handleUpdateProfile = (currentUser, data) => {
                         user.avatar
                     );
 
-                    // KIỂM TRA FILE TỒN TẠI RỒI MỚI XÓA
                     if (fs.existsSync(oldImagePath)) {
                         fs.unlinkSync(oldImagePath);
                     }
                 }
-
-                // LƯU ẢNH MỚI
                 user.avatar = data.avatar;
             }
 
