@@ -28,6 +28,7 @@ import hocuspocusServer from "./config/hocuspocus.js";
 import worldRoutes from './route/worldRoutes.js';
 import socketService from "./services/socketService.js";
 import ttsRoutes from "./route/ttsRoutes.js";
+import aiRoutes from './route/aiRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -48,6 +49,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/images', express.static('src/public/images'));
 
 app.use('/api/assets', assetRoutes);
+
+app.use('/api/ai', aiRoutes);
 
 // =========================
 // Database Connection
