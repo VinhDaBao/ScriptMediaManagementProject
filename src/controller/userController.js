@@ -1,6 +1,12 @@
 import userService from "../services/userService.js";
 import User from "../models/user.js";
 
+import Workspace from '../models/workspace.js';
+import Subscription from '../models/subscription.js';
+import Payment from '../models/payment.js';
+import Asset from '../models/asset.js';
+import mongoose from 'mongoose';
+
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const handleForgotPassword = async (req, res) => {
@@ -60,10 +66,84 @@ const handleToggleUserStatus = async (req, res) => {
     }
 };
 
+const getBillingInfo = async (req, res) => {
+    try {
+        // Lấy ID user từ token (middleware auth)
+        const userId = req.user._id || req.user.id; 
+
+        // 1. Kiểm tra gói Subscription đang ACTIVE
+        const activeSub = await Subscription.findOne({ 
+            userId, 
+            status: "ACTIVE" 
+        }).populate('planId');
+
+        // 2. Cấu hình mặc định (FREE PLAN)
+        let currentPlan = {
+            name: "FREE PLAN",
+            storageLimitMB: 500, // 500 MB
+            workspaceLimit: 3    // 3 Workspace
+        };
+
+        // Nếu có gói Premium thì lấy thông số của gói đó
+        if (activeSub && activeSub.planId) {
+            currentPlan = {
+                name: activeSub.planId.name,
+                storageLimitMB: activeSub.planId.limits?.storageLimitMB || activeSub.planId.limits?.assets || 2048, 
+                workspaceLimit: activeSub.planId.limits?.workspace || 9999
+            };
+        }
+
+        // 3. Tính TỔNG DUNG LƯỢNG thực tế (Cộng dồn file trong tất cả Workspace của User)
+        const userWorkspaces = await Workspace.find({ ownerId: userId }).select('_id');
+        const workspaceIds = userWorkspaces.map(ws => ws._id);
+
+        const storageAgg = await Asset.aggregate([
+            { $match: { workspaceId: { $in: workspaceIds } } },
+            { $group: { _id: "$type", totalSize: { $sum: "$fileSize" } } }
+        ]);
+
+        let totalUsedBytes = 0;
+        let audioVideoBytes = 0;
+        let imageBytes = 0;
+
+        storageAgg.forEach(item => {
+            const size = item.totalSize || 0;
+            totalUsedBytes += size;
+            if (item._id === 'AUDIO' || item._id === 'VIDEO') audioVideoBytes += size;
+            else imageBytes += size; // IMAGE và FILE
+        });
+
+        // 4. Lấy Lịch sử thanh toán
+        const payments = await Payment.find({ userId })
+            .sort({ createdAt: -1 })
+            .populate('planId', 'name'); // Lấy thêm tên gói nếu có
+
+        // 5. Trả dữ liệu về cho Frontend
+        return res.status(200).json({
+            errCode: 0,
+            data: {
+                plan: currentPlan,
+                storage: {
+                    totalUsedBytes,
+                    audioVideoBytes,
+                    imageBytes,
+                    limitBytes: currentPlan.storageLimitMB * 1024 * 1024
+                },
+                payments
+            }
+        });
+
+    } catch (error) {
+        console.error("Billing Info Error:", error);
+        return res.status(500).json({ errCode: -1, message: "Lỗi lấy thông tin dung lượng" });
+    }
+};
+
 export default {
     handleForgotPassword,
     handleVerifyForgotPasswordOTP,
     handleResetPassword,
     handleEditProfile,
-    handleToggleUserStatus
+    handleToggleUserStatus,
+    getBillingInfo 
 };

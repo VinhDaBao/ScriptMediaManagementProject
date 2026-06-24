@@ -28,6 +28,8 @@ const createPayment = async (data) => {
     return await Payment.create({
         userId: data.userId,
         subscriptionId: data.subscriptionId,
+        planId: data.planId, 
+        planSnapshot: data.planSnapshot,
         amount: data.amount,
         method: data.method,
         status: data.status ?? 'SUCCESS',

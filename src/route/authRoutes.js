@@ -95,6 +95,8 @@ router.get('/all-users', authMiddleware, authorizeRole('admin'), async (req, res
     }
 });
 
+router.get('/billing-info', authMiddleware, userController.default.getBillingInfo);
+
 router.post('/toggle-user-status', authMiddleware, authorizeRole('admin'), userController.default.handleToggleUserStatus);
 
 router.post('/forgot-password', userController.default.handleForgotPassword);
