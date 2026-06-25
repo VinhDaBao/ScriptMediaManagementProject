@@ -30,6 +30,10 @@ import socketService from "./services/socketService.js";
 import ttsRoutes from "./route/ttsRoutes.js";
 import aiRoutes from './route/aiRoutes.js';
 
+// THÊM IMPORT CRON VÀ MODEL PAYMENT VÀO ĐÂY
+import cron from 'node-cron';
+import Payment from './models/payment.js'; 
+
 // Load environment variables
 dotenv.config();
 
@@ -88,6 +92,35 @@ app.use("/test",testRoutes);
 // Health check route
 app.get("/", (req, res) => {
     res.send("SMM Project API is working!");
+});
+
+// =========================
+// CRON JOBS LÊN LỊCH TỰ ĐỘNG
+// =========================
+
+// Cài đặt chạy mỗi giờ 1 lần để hủy các đơn PENDING quá hạn
+cron.schedule('0 * * * *', async () => {
+    try {
+        // Lấy mốc thời gian: Đúng 24 giờ trước so với hiện tại
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        
+        // Quét DB: Tìm các đơn PENDING được tạo trước mốc 24h và đổi thành CANCELLED
+        const result = await Payment.updateMany(
+            { 
+                status: 'PENDING', 
+                createdAt: { $lt: twentyFourHoursAgo } 
+            },
+            { 
+                $set: { status: 'CANCELLED' } 
+            }
+        );
+        
+        if (result.modifiedCount > 0) {
+            console.log(`[Cron] Đã tự động dọn dẹp ${result.modifiedCount} giao dịch PENDING quá 24h.`);
+        }
+    } catch (error) {
+        console.error('[Cron] Lỗi khi dọn dẹp giao dịch PENDING:', error);
+    }
 });
 
 // =========================
