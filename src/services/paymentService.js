@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 import Payment from '../models/payment.js';
+import Subscription from '../models/subscription.js';
+import Plan from '../models/plan.js';
+import dotenv from 'dotenv';
+import payOS from '../config/payos.js';
+
+dotenv.config();
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -9,6 +15,7 @@ const buildValidationError = (message) => {
     return error;
 };
 
+// 1. KHÔI PHỤC LẠI HÀM GỐC
 const createPayment = async (data) => {
     const requiredFields = ['userId', 'amount', 'method'];
     const missingField = requiredFields.find((field) => data?.[field] === undefined || data?.[field] === null || data?.[field] === '');
@@ -28,6 +35,8 @@ const createPayment = async (data) => {
     return await Payment.create({
         userId: data.userId,
         subscriptionId: data.subscriptionId,
+        planId: data.planId,
+        planSnapshot: data.planSnapshot,
         amount: data.amount,
         method: data.method,
         status: data.status ?? 'SUCCESS',
@@ -107,10 +116,98 @@ const deletePayment = async (id) => {
     return { deleted: true };
 };
 
+// 2. HÀM TẠO LINK PAYOS CHUẨN
+const createPayOSLink = async (userId, planId, amount) => {
+    const plan = await Plan.findById(planId);
+    if (!plan) {
+        throw new Error('Không tìm thấy gói dịch vụ này trong hệ thống.');
+    }
+
+    const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 100));
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+    const body = {
+        orderCode: orderCode,
+        amount: amount,
+        description: `Nang cap ${orderCode}`, 
+        cancelUrl: `${frontendUrl}/workspace/settings?status=cancel`,
+        returnUrl: `${frontendUrl}/workspace/settings?status=success`
+    };
+
+    const paymentLinkResponse = await payOS.paymentRequests.create(body);
+
+    await Payment.create({
+        userId: userId,
+        planId: planId,
+        amount: amount,
+        method: 'PAYOS',
+        status: 'PENDING',
+        transactionRef: String(orderCode),
+        planSnapshot: {
+            name: plan.name,
+            price: plan.price
+        }
+    });
+
+    return paymentLinkResponse;
+};
+
+// 3. HÀM XỬ LÝ WEBHOOK KHI KHÁCH QUÉT MÃ XONG
+const handlePayOSWebhook = async (webhookBody) => {
+    try {
+        const webhookData = await payOS.webhooks.verify(webhookBody);
+
+        if (webhookData.code === '00') {
+            const orderCode = webhookData.orderCode;
+
+            const payment = await Payment.findOne({ transactionRef: String(orderCode) });
+
+            if (!payment || payment.status === 'SUCCESS') {
+                return { status: 'Ignored' };
+            }
+
+            payment.status = 'SUCCESS';
+            await payment.save();
+
+            let subscription = await Subscription.findOne({
+                userId: payment.userId,
+                status: 'ACTIVE'
+            });
+
+            const now = new Date();
+            const expireDate = new Date();
+            expireDate.setDate(now.getDate() + 30);
+
+            if (subscription) {
+                subscription.planId = payment.planId;
+                subscription.endDate = expireDate;
+            } else {
+                subscription = await Subscription.create({
+                    userId: payment.userId,
+                    planId: payment.planId,
+                    status: 'ACTIVE',
+                    startDate: now,
+                    endDate: expireDate
+                });
+            }
+
+            await subscription.save();
+
+            return { success: true };
+        }
+    } catch (error) {
+        console.error('Lỗi Webhook PayOS:', error);
+        throw error;
+    }
+};
+
 export default {
     createPayment,
     getAllPayments,
     getPaymentById,
+    createPayOSLink,
+    handlePayOSWebhook,
     updatePayment,
     deletePayment,
 };

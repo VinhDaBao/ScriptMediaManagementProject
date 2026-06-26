@@ -50,10 +50,52 @@ const deletePayment = async (req, res) => {
     }
 };
 
+const createPayOSLink = async (req, res) => {
+    try {
+        const { planId, amount } = req.body;
+        const userId = req.user._id || req.user.id;
+
+        const linkData = await paymentService.createPayOSLink(
+            userId,
+            planId,
+            amount
+        );
+
+        return res.status(200).json({
+            errCode: 0,
+            data: linkData
+        });
+    } catch (error) {
+        console.error("LỖI KHI TẠO LINK PAYOS:", error);
+        return res.status(500).json({
+            errCode: 1,
+            message: error.message
+        });
+    }
+};
+
+const handleWebhook = async (req, res) => {
+    try {
+        await paymentService.handlePayOSWebhook(req.body);
+
+        return res.status(200).json({
+            errCode: 0,
+            message: 'Webhook đã xử lý'
+        });
+    } catch (error) {
+        return res.status(200).json({
+            errCode: 1,
+            message: error.message
+        });
+    }
+};
+
 export default {
     createPayment,
     getAllPayments,
     getPaymentById,
     updatePayment,
     deletePayment,
+    createPayOSLink,
+    handleWebhook
 };

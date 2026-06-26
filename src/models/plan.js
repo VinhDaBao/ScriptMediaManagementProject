@@ -7,7 +7,7 @@ const planSchema = new mongoose.Schema({
   limits: {
     workspace: Number,
     projects: Number,
-    assets: Number,
+    storageLimitMB: Number,
     worlds: Number,
     members: Number,
   },
