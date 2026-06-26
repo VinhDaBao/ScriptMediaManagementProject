@@ -139,11 +139,48 @@ const getBillingInfo = async (req, res) => {
     }
 };
 
+const handleGetAllUsers = async (req, res) => {
+    try {
+        const queryParams = {
+            search: req.query.search || '',
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 10,
+            sortBy: req.query.sortBy || 'createdAt',
+            sortOrder: req.query.sortOrder || 'desc'
+        };
+
+        // Đẩy hết mớ bòng bong qua Service xử lý
+        const data = await userService.getAllUsersAdmin(queryParams);
+        
+        return res.status(200).json({ errCode: 0, data });
+    } catch (error) {
+        console.error('Lỗi lấy danh sách user:', error);
+        return res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+    }
+};
+
+// ==========================================
+// THÊM: CONTROLLER THỐNG KÊ DASHBOARD
+// ==========================================
+const handleGetDashboardStats = async (req, res) => {
+    try {
+        // Lấy kết quả từ Service
+        const data = await userService.getAdminDashboardStats();
+        
+        return res.status(200).json({ errCode: 0, data });
+    } catch (error) {
+        console.error('Lỗi lấy thống kê Dashboard:', error);
+        return res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+    }
+};
+
 export default {
     handleForgotPassword,
     handleVerifyForgotPasswordOTP,
     handleResetPassword,
     handleEditProfile,
     handleToggleUserStatus,
-    getBillingInfo 
+    getBillingInfo,
+    handleGetAllUsers,
+    handleGetDashboardStats 
 };

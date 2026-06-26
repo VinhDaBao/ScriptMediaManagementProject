@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import transporter from '../config/mailer.js';
 import fs from 'fs';
 import path from 'path';
+import Subscription from '../models/subscription.js';
+import Payment from '../models/payment.js';
 
 const salt = bcrypt.genSaltSync(10);
 
@@ -151,9 +153,92 @@ const verifyForgotPasswordOTP = async (data) => {
     }
 }
 
+const getAllUsersAdmin = async (queryParams) => {
+    const { search, page, limit, sortBy, sortOrder } = queryParams;
+    let query = { role: 'user' };
+
+    if (search) {
+        query.$or = [
+            { email: { $regex: search, $options: 'i' } },
+            { fullName: { $regex: search, $options: 'i' } }
+        ];
+    }
+
+    const sortConfig = { [sortBy]: sortOrder === 'asc' ? 1 : -1 };
+    const skip = (page - 1) * limit;
+
+    const [users, totalUsers] = await Promise.all([
+        User.find(query).select('-password').sort(sortConfig).skip(skip).limit(limit).lean(),
+        User.countDocuments(query)
+    ]);
+
+    const userIds = users.map(user => user._id);
+    const subscriptions = await Subscription.find({
+        userId: { $in: userIds },
+        status: 'ACTIVE'
+    }).populate({ path: 'planId', select: 'name' }).lean();
+
+    const usersWithPlan = users.map(user => {
+        const userSub = subscriptions.find(sub => String(sub.userId) === String(user._id));
+        return { ...user, subscription: userSub || null };
+    });
+
+    return {
+        users: usersWithPlan,
+        pagination: {
+            currentPage: page,
+            pageSize: limit,
+            totalItems: totalUsers,
+            totalPages: Math.ceil(totalUsers / limit)
+        }
+    };
+};
+
+// ==========================================
+// THÊM: LOGIC LẤY THỐNG KÊ DASHBOARD (ADMIN)
+// ==========================================
+const getAdminDashboardStats = async () => {
+    const totalUsers = await User.countDocuments({ role: 'user' });
+    const proUsers = await Subscription.countDocuments({ status: 'ACTIVE' });
+
+    const payments = await Payment.find({ status: 'SUCCESS' }).lean();
+    const totalRevenue = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+    const revenueData = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(d.getMonth() - i);
+        const monthStr = `Tháng ${d.getMonth() + 1}`;
+
+        const monthPayments = payments.filter(p => {
+            const pDate = new Date(p.createdAt);
+            return pDate.getMonth() === d.getMonth() && pDate.getFullYear() === d.getFullYear();
+        });
+        const monthRevenue = monthPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        revenueData.push({ month: monthStr, revenue: monthRevenue });
+    }
+
+    const freeUsers = totalUsers - proUsers;
+    const planData = [
+        { name: 'Gói FREE', value: freeUsers > 0 ? freeUsers : 0 },
+        { name: 'Gói PRO', value: proUsers }
+    ];
+
+    return {
+        totalUsers,
+        activeSubscriptions: proUsers,
+        totalRevenue,
+        revenueData,
+        planData
+    };
+};
+
 export default {
     sendOTPtoEmail,
     verifyForgotPasswordOTP,
     resetPassword,
-    handleUpdateProfile
+    handleUpdateProfile,
+    getAllUsersAdmin,
+    getAdminDashboardStats
 };
