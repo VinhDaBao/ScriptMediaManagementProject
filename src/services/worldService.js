@@ -35,50 +35,54 @@ const getWorldsByWorkspace = async (workspaceId) => {
   return await World.find({ workspaceId }).sort({ createdAt: -1 });
 };
 
-//Lấy toàn bộ dữ liệu cấu trúc Đồ thị (Nodes + Edges) của một World
-const getWorldGraph = async (worldId) => {
+//Hàm truy xuất đồ thị sơ đồ theo tab world
+const getWorldGraph = async (worldId, queryData = {} ) => {
     if (!isValidObjectId(worldId)) {
         throw buildValidationError("Invalid world id", 400);
     }
+    /*
     const worldExists = await World.exists({ _id: worldId });
     if (!worldExists) {
         throw buildValidationError("World not found", 404);
     }
+    */
 
+    // Bốc trường stageId từ Frontend gửi lên qua query, mặc định lấy stage_1
+    const stageId = queryData.stageId || "stage_1";
+
+    // Đơn giản hóa bộ lọc: Chỉ bốc các Node và Edge thuộc đúng World này và đúng Tab này
     const [nodes, edges] = await Promise.all([
-        WorldNode.find({ worldId }),
-        WorldEdge.find({ worldId }),
+        WorldNode.find({ worldId, stageId }),
+        WorldEdge.find({ worldId, stageId }),
     ]);
     return { nodes, edges };
 };
 
-//Thuật toán quan trọng: Lưu/Cập nhật toàn bộ sơ đồ bằng cơ chế ghi đè dữ liệu
+//Hàm lưu, cập nhật toàn bộ sơ đồ bằng cơ chế ghi đè dữ liệu theo tab
 const saveWorldGraph = async (worldId, graphData) => {
     if (!isValidObjectId(worldId)) {
         throw buildValidationError("Invalid world id", 400);
     }
 
-    const { nodes = [], edges = [] } = graphData;
-
-    // Tạo bản đồ ánh xạ từ ID tạm của Frontend sang ObjectId xịn của Mongo
+    const { nodes = [], edges = [], stageId = "stage_1" } = graphData;
     const nodeIdMapping = {};
 
     const nodesToInsert = nodes.map((node) => {
-        // Ép kiểu: Cho dù là ID cũ hay mới, đều ép về instance Types.ObjectId xịn
         const finalId = isValidObjectId(node.id)
                     ? new mongoose.Types.ObjectId(node.id)
                     : new mongoose.Types.ObjectId();
 
-        // Lưu lại bản đồ ánh xạ, ví dụ: {"node_1": "6640beef..."}
         nodeIdMapping[node.id] = finalId;
 
         return {
             _id: finalId,
-            worldId: new mongoose.Types.ObjectId(worldId), // Ép kiểu worldId
+            worldId: new mongoose.Types.ObjectId(worldId),
+            stageId: stageId,
             name: node.name || node.data?.label || "Unnamed Node",
-            description: node.description || "",
+            description: node.description || node.data?.description || "",
             keyValues: node.keyValues || [],
             tags: node.tags || [],
+            avatarUrl: node.avatarUrl || node.data?.avatarUrl || "",
             position: {
                 x: node.position?.x || 0,
                 y: node.position?.y || 0,
@@ -88,37 +92,42 @@ const saveWorldGraph = async (worldId, graphData) => {
 
     const edgesToInsert = [];
     for (const edge of edges) {
-        // Tìm ID chuẩn được ép kiểu ObjectId trong bảng ánh xạ
         let fromId = nodeIdMapping[edge.source];
         let toId = nodeIdMapping[edge.target];
 
-        // Nếu không có trong bảng ánh xạ nhưng bản thân nó là ObjectId hợp lệ, thì tạo mới instance
         if (!fromId && isValidObjectId(edge.source)) fromId = new mongoose.Types.ObjectId(edge.source);
         if (!toId && isValidObjectId(edge.target)) toId = new mongoose.Types.ObjectId(edge.target);
 
-        // Bỏ qua đường nối nếu không xác định được điểm đầu hoặc điểm cuối hợp lệ
         if (!fromId || !toId) continue;
 
         edgesToInsert.push({
             worldId: new mongoose.Types.ObjectId(worldId),
+            stageId: stageId,
             fromNodeId: fromId,
             toNodeId: toId,
-            type: edge.type || "RELATION",
+            type: edge.label || edge.type || "Connected",
+            color: edge.style?.stroke || "#3b82f6",
         });
     }
 
-    // Thực thi xóa sạch cũ - ghi đè mới trong database
-    await Promise.all([
-        WorldNode.deleteMany({ worldId }),
-        WorldEdge.deleteMany({ worldId }),
-    ]);
+    try {
+        // Thực hiện xóa sạch dữ liệu thuộc đúng phân đoạn Tab này trước khi nạp mới
+        await Promise.all([
+            WorldNode.deleteMany({ worldId, stageId }),
+            WorldEdge.deleteMany({ worldId, stageId }),
+        ]);
 
-    const [savedNodes, savedEdges] = await Promise.all([
-        WorldNode.insertMany(nodesToInsert),
-        WorldEdge.insertMany(edgesToInsert),
-    ]);
+        const [savedNodes, savedEdges] = await Promise.all([
+            WorldNode.insertMany(nodesToInsert),
+            WorldEdge.insertMany(edgesToInsert),
+        ]);
 
-    return { nodes: savedNodes, edges: savedEdges };
+        return { nodes: savedNodes, edges: savedEdges };
+    } catch (dbError) {
+        // Nếu dính lỗi trùng chỉ mục độc nhất hoặc lỗi DB, ném ra ngoài để Controller bốc trả về lỗi 400 ngay lập tức
+        console.error(">>> Lỗi ghi đè dữ liệu MongoDB:", dbError.message);
+        throw buildValidationError(`Database Sync Failed: ${dbError.message}`, 400);
+    }
 };
 
 export default {

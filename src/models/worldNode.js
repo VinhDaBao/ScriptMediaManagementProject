@@ -9,6 +9,12 @@ const worldNodeSchema = new mongoose.Schema(
       index: true,
     },
 
+    stageId: {
+        type: String,
+        default: "stage_1", // mặc định gán vào Tab chính ban đầu
+        required: true
+    },
+
     name: {
       type: String,
       required: true,
@@ -32,6 +38,11 @@ const worldNodeSchema = new mongoose.Schema(
         },
       },
     ],
+
+    avatarUrl: {
+        type: String,
+        default: ""
+    },
 
     tags: [
       {

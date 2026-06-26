@@ -44,7 +44,8 @@ const getWorldsByWorkspace = async (req, res) => {
 
 const getWorldGraph = async (req, res) => {
   try {
-    const graph = await worldService.getWorldGraph(req.params.worldId);
+    // Nhận diện mã Tab qua tham số query trên thanh URL (Ví dụ: ?stageId=stage_2)
+    const graph = await worldService.getWorldGraph(req.params.worldId, req.query);
     return res.status(200).json({
       errCode: 0,
       message: "World graph fetched successfully",
