@@ -28,6 +28,16 @@ const worldEdgeSchema = new mongoose.Schema(
       default: "RELATION",
       trim: true,
     },
+
+    stageId: {
+        type: String,
+        default: "stage_1",
+        required: true
+    },
+    color: {
+        type: String,
+        default: "#3b82f6" // Mặc định là xanh dương
+    },
   },
   {
     timestamps: true,
@@ -39,7 +49,7 @@ worldEdgeSchema.index({ fromNodeId: 1 });
 worldEdgeSchema.index({ toNodeId: 1 });
 
 worldEdgeSchema.index(
-  { worldId: 1, fromNodeId: 1, toNodeId: 1 },
+  { worldId: 1, stageId: 1, fromNodeId: 1, toNodeId: 1 },
   { unique: true }
 );
 
