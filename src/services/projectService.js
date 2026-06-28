@@ -38,6 +38,9 @@ const createProject = async (data, userId) => {
     });
 };
 
+// ==========================================
+// 🌟 ĐÃ SỬA: Lấy chi tiết Avatar và đếm số Asset
+// ==========================================
 const getAllProjects = async (workspaceId) => {
     if (!workspaceId) {
         throw buildValidationError('workspaceId is required');
@@ -45,7 +48,40 @@ const getAllProjects = async (workspaceId) => {
     if (!isValidObjectId(workspaceId)) {
         throw buildValidationError('Invalid workspaceId');
     }
-    return await Project.find({ workspaceId }).sort({ createdAt: -1 });
+
+    // 1. Lấy Project và "nhúng" (populate) thông tin người tạo + người sửa cuối
+    let projects = await Project.find({ workspaceId })
+        .populate('createdBy', 'fullName email avatar')
+        .populate('lastEditedBy', 'fullName email avatar')
+        .sort({ createdAt: -1 })
+        .lean(); // lean() giúp biến object Mongoose thành mảng JS thuần để dễ thêm field
+
+    // 2. Gom ID của các project lại để tìm tổng số Asset
+    const projectIds = projects.map(p => p._id);
+    const assetCounts = await ProjectAsset.aggregate([
+        { $match: { projectId: { $in: projectIds } } },
+        { $group: { _id: '$projectId', count: { $sum: 1 } } }
+    ]);
+
+    // 3. Ghép số đếm Asset và gộp Avatar vào từng project
+    projects = projects.map(p => {
+        const assetData = assetCounts.find(a => String(a._id) === String(p._id));
+        
+        // Gộp người tạo và người sửa cuối (nếu khác nhau) thành mảng members để UI hiện 2 avatar
+        let members = [];
+        if (p.createdBy) members.push(p.createdBy);
+        if (p.lastEditedBy && String(p.lastEditedBy._id) !== String(p.createdBy?._id)) {
+            members.push(p.lastEditedBy);
+        }
+
+        return {
+            ...p,
+            assetCount: assetData ? assetData.count : 0, // Nhét số lượng Asset vào
+            members: members // Nhét mảng members vào cho Frontend đọc
+        };
+    });
+
+    return projects;
 };
 
 const getProjectById = async (id) => {
@@ -53,7 +89,9 @@ const getProjectById = async (id) => {
         throw buildValidationError('Invalid project id');
     }
 
-    const project = await Project.findById(id);
+    const project = await Project.findById(id)
+        .populate('createdBy', 'fullName email avatar')
+        .populate('lastEditedBy', 'fullName email avatar');
 
     if (!project) {
         const error = new Error('Project not found');
@@ -111,6 +149,9 @@ const deleteProject = async (id) => {
 
     // Delete associated blocks when project is deleted
     await Block.deleteMany({ projectId: id });
+
+    // Cập nhật: Nên xóa luôn các ProjectAsset liên quan để tránh rác DB
+    await ProjectAsset.deleteMany({ projectId: id });
 
     await project.deleteOne();
     return { deleted: true };

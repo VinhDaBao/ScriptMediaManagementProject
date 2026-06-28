@@ -15,7 +15,12 @@ const createWorkspace = async (req, res) => {
         const workspace = await workspaceService.createWorkspace(req.body, req.user?.id);
         return res.status(201).json({ errCode: 0, message: 'Workspace created successfully', data: workspace });
     } catch (error) {
-        return sendError(res, error);
+        const statusCode = error.statusCode || 500;
+    
+        return res.status(statusCode).json({ 
+            errCode: 1, 
+            message: error.message || 'Lỗi khi tạo Workspace' 
+        });
     }
 };
 
