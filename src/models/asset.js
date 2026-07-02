@@ -20,6 +20,11 @@ const mediaSchema = new mongoose.Schema(
       required: true,
     },
 
+    publicId: {
+      type: String,
+      required: true, 
+    },
+
     fileName: {
       type: String,
       required: true,

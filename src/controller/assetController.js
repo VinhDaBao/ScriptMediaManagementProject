@@ -60,6 +60,7 @@ export const uploadAsset = async (req, res) => {
             workspaceId: workspaceId || null,
             type: fileType,
             url: req.file.path,
+            publicId: req.file.filename, // Lấy ID định danh từ Cloudinary
             fileName: req.file.originalname,
             fileSize: req.file.size,
             tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
@@ -162,6 +163,7 @@ export const deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Quá trình xóa file vật lý trên Cloudinary đã được gom gọn vào file Service
         const deletedAsset = await assetService.deleteAssetService(id);
 
         if (!deletedAsset) {
