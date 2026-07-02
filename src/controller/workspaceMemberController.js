@@ -5,6 +5,8 @@ import * as service from "../services/workspaceMemberService.js";
  */
 export const getMembers = async (req, res) => {
   try {
+    console.log(req.user.id);
+    console.log(req.params.workspaceId);
     const members = await service.getWorkspaceMembers(req.params.workspaceId);
 
     res.json({ success: true, data: members });

@@ -1,4 +1,4 @@
-import WorkspaceMember from "../models/WorkspaceMember.js";
+import WorkspaceMember from "../models/workspacemember.js";
 import notificationService from "./notificationService.js";
 
 /**
@@ -6,7 +6,7 @@ import notificationService from "./notificationService.js";
  */
 export const getWorkspaceMembers = async (workspaceId) => {
   return WorkspaceMember.find({ workspaceId })
-    .populate("userId", "fullName email avatar")
+    .populate("userId", "fullName email")
     .sort({ createdAt: 1 });
 };
 
