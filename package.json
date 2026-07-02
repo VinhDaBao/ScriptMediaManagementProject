@@ -9,6 +9,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon --exec babel-node src/server.js"
+
   },
   "dependencies": {
     "@google-cloud/text-to-speech": "^6.4.1",
@@ -43,6 +44,7 @@
     "@babel/core": "^7.29.0",
     "@babel/node": "^7.29.0",
     "@babel/preset-env": "^7.29.3",
+    "mongoose-erd-generator": "^0.0.5",
     "nodemon": "^3.1.14",
     "sequelize-cli": "^6.6.5"
   }
