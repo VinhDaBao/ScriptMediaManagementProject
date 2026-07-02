@@ -375,28 +375,3 @@ Based on the current architecture:
 
 ---
 
-## 14. Screenshots
-
-### Login Portal
-![Login](docs/images/login.png)
-
-### Workspace Dashboard
-![Dashboard](docs/images/dashboard.png)
-
-### Script Collaborative Editor
-![Editor](docs/images/editor.png)
-
-### Narrative World Mapping Graph
-![WorldMap](docs/images/worldmap.png)
-
----
-
-## 15. Contributors
-
-*   **Truong Quang Diep** - Lead Software Developer (Student ID details referenced in source code metadata).
-
----
-
-## 16. License
-
-This project is licensed under the **ISC License**. For more details, refer to the [package.json file](file:///d:/CCNPMM/CK/ScriptMediaManagementProject/package.json#L5).
