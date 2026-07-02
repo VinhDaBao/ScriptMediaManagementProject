@@ -9,7 +9,7 @@ const resetData = async () => {
     
     // 2. Xóa sạch dữ liệu cũ
     await User.deleteMany({});
-    console.log(">>> Đã dọn sạch dữ liệu cũ trong bảng users.");
+    console.log(">>> Old data in the users table has been cleared.");
 
     // 3. Tạo dữ liệu mẫu Admin (Dùng mail sinh viên của ông cho thực tế)
     await User.create({
@@ -23,10 +23,10 @@ const resetData = async () => {
       avatar: "https://i.pravatar.cc/300" 
     });
 
-    console.log(">>> Reset thành công! Dữ liệu mới đã được đẩy lên MongoDB Atlas.");
+    console.log(">>> Reset completed successfully. New data has been pushed to MongoDB Atlas.");
     process.exit(0);
   } catch (error) {
-    console.error("Lỗi khởi tạo DB:", error);
+    console.error("Database initialization error:", error);
     process.exit(1);
   }
 };

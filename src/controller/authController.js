@@ -13,7 +13,7 @@ export const register = async (req, res) => {
     try {
         const newUser = await authService.registerUser(req.body);
         res.status(201).json({
-            message: "Đăng ký thành công. Vui lòng kiểm tra email để nhận mã OTP xác thực.",
+            message: "Registration successful. Please check your email to receive the verification OTP.",
             email: newUser.email
         });
     } catch (error) {
@@ -25,7 +25,7 @@ export const verifyOTP = async (req, res) => {
     try {
         const { email, otp } = req.body;
         await authService.verifyOTP(email, otp);
-        res.status(200).json({ errCode: 0, message: "Tài khoản đã được kích hoạt thành công. Bạn có thể đăng nhập ngay bây giờ." });
+        res.status(200).json({ errCode: 0, message: "Your account has been activated successfully. You can log in now." });
     } catch (error) {
         res.status(400).json({ errCode: 1,message: error.message });
     }
@@ -40,7 +40,7 @@ export const login = async (req, res) => {
 
         if (!errors.isEmpty()) {
             return res.status(400).json({
-                message: "Tài khoản hoặc mật khẩu không chính xác!"
+                message: "Invalid email or password."
             });
         }
 
@@ -50,7 +50,7 @@ export const login = async (req, res) => {
 
         if (user.isActivated === false) {
             return res.status(403).json({
-                message: 'Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ hỗ trợ!'
+                message: 'Your account has been suspended by an administrator. Please contact support.'
             });
         }
 
@@ -83,7 +83,7 @@ export const login = async (req, res) => {
         });
     } catch (error) {
         return res.status(400).json({
-            message: "Tài khoản hoặc mật khẩu không chính xác!"
+            message: "Invalid email or password."
         });
     }
 };
@@ -92,7 +92,7 @@ export const login = async (req, res) => {
 export const refreshToken = async (req, res) => {
     try {
         const { refreshToken } = req.body;
-        if (!refreshToken) return res.status(400).json({ message: "Không tìm thấy Refresh Token" });
+        if (!refreshToken) return res.status(400).json({ message: "Refresh token not found." });
 
         // 1. Verify Refresh Token xem còn hạn không
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
@@ -101,13 +101,13 @@ export const refreshToken = async (req, res) => {
         // 2. Kiểm tra xem Token này có khớp với cái đang lưu trong Redis không
         const storedToken = await redisClient.get(`refresh_token:${userId}`);
         if (!storedToken || storedToken !== refreshToken) {
-            return res.status(401).json({ message: "Refresh Token không hợp lệ hoặc đã bị thu hồi. Vui lòng đăng nhập lại." });
+            return res.status(401).json({ message: "The refresh token is invalid or has been revoked. Please log in again." });
         }
 
         // 3. Gọi DB để lấy thông tin User chuẩn (Thay vì xài Dummy)
         const user = await User.findById(userId);
         if (!user) {
-            return res.status(401).json({ message: "Tài khoản không tồn tại. Vui lòng đăng nhập lại." });
+            return res.status(401).json({ message: "Account not found. Please log in again." });
         }
 
         // 4. Sinh bộ đôi Token mới (Rotation Refresh Token)
@@ -122,7 +122,7 @@ export const refreshToken = async (req, res) => {
             refreshToken: newRefreshToken
         });
     } catch (error) {
-        return res.status(401).json({ message: "Refresh Token đã hết hạn. Vui lòng đăng nhập lại." });
+        return res.status(401).json({ message: "The refresh token has expired. Please log in again." });
     }
 };
 
@@ -134,8 +134,8 @@ export const logout = async (req, res) => {
         // Thu hồi quyền bằng cách xóa luôn key trong Redis
         await redisClient.del(`refresh_token:${userId}`);
         
-        return res.json({ message: "Đăng xuất thành công!" });
+        return res.json({ message: "Logout successful." });
     } catch (error) {
-        return res.status(500).json({ message: "Lỗi server khi đăng xuất" });
+        return res.status(500).json({ message: "Server error while logging out." });
     }
 };

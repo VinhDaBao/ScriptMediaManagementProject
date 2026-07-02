@@ -125,7 +125,7 @@ const saveWorldGraph = async (worldId, graphData) => {
         return { nodes: savedNodes, edges: savedEdges };
     } catch (dbError) {
         // Nếu dính lỗi trùng chỉ mục độc nhất hoặc lỗi DB, ném ra ngoài để Controller bốc trả về lỗi 400 ngay lập tức
-        console.error(">>> Lỗi ghi đè dữ liệu MongoDB:", dbError.message);
+        console.error(">>> MongoDB overwrite error:", dbError.message);
         throw buildValidationError(`Database Sync Failed: ${dbError.message}`, 400);
     }
 };

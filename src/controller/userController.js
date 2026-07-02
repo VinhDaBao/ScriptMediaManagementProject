@@ -11,7 +11,7 @@ const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 const handleForgotPassword = async (req, res) => {
     let email = req.body.email;
-    if (!email) return res.status(200).json({ errCode: 1, message: 'Nhập Email!' });
+    if (!email) return res.status(200).json({ errCode: 1, message: 'Please enter your email.' });
     
     let response = await userService.sendOTPtoEmail(email);
     return res.status(200).json(response);
@@ -36,7 +36,7 @@ const handleEditProfile = async (req, res) => {
         let message = await userService.handleUpdateProfile(req.user, data);
         return res.status(200).json(message);
     } catch (e) {
-        return res.status(200).json({ errCode: -1, message: 'Lỗi server...' });
+        return res.status(200).json({ errCode: -1, message: 'Server error.' });
     }
 };
 
@@ -46,23 +46,23 @@ const handleToggleUserStatus = async (req, res) => {
         
         const user = await User.findById(targetUserId);
         if (!user) {
-            return res.status(404).json({ errCode: 1, message: 'Không tìm thấy người dùng này!' });
+            return res.status(404).json({ errCode: 1, message: 'This user was not found.' });
         }
         
         if (user.role === 'admin') {
-            return res.status(403).json({ errCode: 2, message: 'Không thể khóa tài khoản của Admin khác!' });
+            return res.status(403).json({ errCode: 2, message: 'You cannot disable another admin account.' });
         }
 
         // Đảo ngược trạng thái (Đang true thì thành false, đang false thì thành true)
         user.isActivated = !user.isActivated; 
         await user.save();
 
-        const statusMessage = user.isActivated ? "Đã mở khóa tài khoản thành công!" : "Đã khóa tài khoản thành công!";
+        const statusMessage = user.isActivated ? "Account unlocked successfully." : "Account locked successfully.";
         return res.status(200).json({ errCode: 0, message: statusMessage, isActivated: user.isActivated });
 
     } catch (error) {
-        console.error("Lỗi khóa tài khoản:", error);
-        return res.status(500).json({ errCode: -1, message: 'Lỗi server khi cập nhật trạng thái User' });
+        console.error("Error while toggling account status:", error);
+        return res.status(500).json({ errCode: -1, message: 'Server error while updating user status.' });
     }
 };
 
@@ -135,7 +135,7 @@ const getBillingInfo = async (req, res) => {
 
     } catch (error) {
         console.error("Billing Info Error:", error);
-        return res.status(500).json({ errCode: -1, message: "Lỗi lấy thông tin dung lượng" });
+        return res.status(500).json({ errCode: -1, message: "Error while fetching storage information." });
     }
 };
 
@@ -154,8 +154,8 @@ const handleGetAllUsers = async (req, res) => {
         
         return res.status(200).json({ errCode: 0, data });
     } catch (error) {
-        console.error('Lỗi lấy danh sách user:', error);
-        return res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+        console.error('Error while fetching the user list:', error);
+        return res.status(500).json({ errCode: 1, message: 'Server error.' });
     }
 };
 
@@ -169,8 +169,8 @@ const handleGetDashboardStats = async (req, res) => {
         
         return res.status(200).json({ errCode: 0, data });
     } catch (error) {
-        console.error('Lỗi lấy thống kê Dashboard:', error);
-        return res.status(500).json({ errCode: 1, message: 'Lỗi server' });
+        console.error('Error while fetching dashboard stats:', error);
+        return res.status(500).json({ errCode: 1, message: 'Server error.' });
     }
 };
 

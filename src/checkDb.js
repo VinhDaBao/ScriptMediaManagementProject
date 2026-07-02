@@ -37,7 +37,7 @@ const checkDatabase = async () => {
 
     process.exit(0);
   } catch (error) {
-    console.error("Lỗi khi quét CSDL:", error);
+    console.error("Error while scanning the database:", error);
     process.exit(1);
   }
 };

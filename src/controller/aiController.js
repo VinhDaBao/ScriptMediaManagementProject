@@ -6,12 +6,12 @@ export const chatWithAi = async (req, res) => {
         
         // 1. Kiểm tra đầu vào
         if (!process.env.GEMINI_API_KEY) {
-            console.error("[AI Config Error]: Thiếu GEMINI_API_KEY trong file .env");
-            return res.status(500).json({ message: "Lỗi cấu hình hệ thống AI." });
+            console.error("[AI Config Error]: GEMINI_API_KEY is missing in the .env file");
+            return res.status(500).json({ message: "AI system configuration error." });
         }
 
         if (!message) {
-            return res.status(400).json({ message: "Vui lòng nhập câu hỏi." });
+            return res.status(400).json({ message: "Please enter a question." });
         }
 
         // 2. Nhờ Service gọi Gemini xử lý
@@ -26,12 +26,12 @@ export const chatWithAi = async (req, res) => {
         // Bắt riêng lỗi 503
         if (error.message && error.message.includes("503")) {
             return res.status(200).json({ 
-                reply: "Xin lỗi, hiện tại tổng đài AI đang bị kẹt xe do quá đông người sử dụng. Bạn vui lòng đợi 1 phút rồi hỏi lại mình nhé! 🚦" 
+                reply: "Sorry, the AI service is currently overloaded due to heavy traffic. Please wait 1 minute and try again. 🚦" 
             });
         }
 
         return res.status(500).json({ 
-            message: "Không thể kết nối đến máy chủ AI lúc này.", 
+            message: "Unable to connect to the AI server right now.", 
             error: error.message 
         });
     }

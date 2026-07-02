@@ -6,7 +6,7 @@ let router = express.Router(); //khởi tạo Route
 let initWebRoutes = (app) => { 
     
     router.get('/', (req, res) => {
-        return res.send('Trương Quang Điệp');
+        return res.send('Home');
     });
 
     // gọi hàm trong controller

@@ -66,7 +66,7 @@ const createPayOSLink = async (req, res) => {
             data: linkData
         });
     } catch (error) {
-        console.error("LỖI KHI TẠO LINK PAYOS:", error);
+        console.error("ERROR WHILE CREATING PAYOS LINK:", error);
         return res.status(500).json({
             errCode: 1,
             message: error.message
@@ -80,7 +80,7 @@ const handleWebhook = async (req, res) => {
 
         return res.status(200).json({
             errCode: 0,
-            message: 'Webhook đã xử lý'
+            message: 'Webhook processed.'
         });
     } catch (error) {
         return res.status(200).json({

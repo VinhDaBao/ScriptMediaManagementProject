@@ -32,7 +32,7 @@ const createWorkspace = async (data) => {
 
     if (currentWorkspaceCount >= workspaceLimit) {
         // Ném lỗi 400 (Bad Request) để Frontend bắt được thay vì 200
-        const error = new Error(`Tài khoản của bạn đã đạt giới hạn tối đa ${workspaceLimit} Workspace. Vui lòng nâng cấp gói dịch vụ để tạo thêm!`);
+        const error = new Error(`Your account has reached the maximum limit of ${workspaceLimit} workspaces. Please upgrade your plan to create more.`);
         error.statusCode = 400; 
         throw error;
     }
@@ -56,7 +56,7 @@ const createWorkspace = async (data) => {
 
 const getAllWorkspaces = async (userId) => {
     if (!isValidObjectId(userId)) {
-        throw buildValidationError('Invalid user id');
+        throw buildValidationError('Invalid user ID.');
     }
 
     const memberships = await WorkspaceMember.find({ userId })
@@ -73,13 +73,13 @@ const getAllWorkspaces = async (userId) => {
 
 const getWorkspaceById = async (id) => {
     if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace id');
+        throw buildValidationError('Invalid workspace ID.');
     }
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-        const error = new Error('Workspace not found');
+        const error = new Error('Workspace not found.');
         error.statusCode = 404;
         throw error;
     }

@@ -19,7 +19,7 @@ const createWorkspace = async (req, res) => {
     
         return res.status(statusCode).json({ 
             errCode: 1, 
-            message: error.message || 'Lỗi khi tạo Workspace' 
+            message: error.message || 'Error while creating the workspace.' 
         });
     }
 };

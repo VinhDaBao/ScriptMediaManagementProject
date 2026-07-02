@@ -45,7 +45,7 @@ let getEditCRUD = async (req, res) => {
             data: userData
         });
     } else {
-        return res.send('không lấy được id');
+        return res.send('Unable to retrieve the ID');
     }
 }
 

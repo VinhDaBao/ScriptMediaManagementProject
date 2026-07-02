@@ -7,7 +7,7 @@ import Asset from '../models/asset.js';
 export const uploadAsset = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ errCode: 1, message: "Không tìm thấy file upload!" });
+            return res.status(400).json({ errCode: 1, message: "Uploaded file not found." });
         }
 
         const { workspaceId, tags } = req.body;
@@ -15,7 +15,7 @@ export const uploadAsset = async (req, res) => {
         if (workspaceId) {
             const workspace = await Workspace.findById(workspaceId);
             if (!workspace) {
-                return res.status(404).json({ errCode: 1, message: "Workspace không tồn tại" });
+                return res.status(404).json({ errCode: 1, message: "Workspace does not exist." });
             }
 
             const ownerId = workspace.ownerId;
@@ -46,7 +46,7 @@ export const uploadAsset = async (req, res) => {
             if (currentTotalSize + newFileSize > limitBytes) {
                 return res.status(400).json({
                     errCode: 1,
-                    message: `Không đủ dung lượng! Gói của bạn tối đa ${limitMB}MB. Hiện đã dùng ${Math.round(currentTotalSize / (1024 * 1024))}MB. Vui lòng nâng cấp gói hoặc xóa bớt tài nguyên.`
+                    message: `Insufficient storage. Your plan allows up to ${limitMB}MB. You are currently using ${Math.round(currentTotalSize / (1024 * 1024))}MB. Please upgrade your plan or remove some assets.`
                 });
             }
         }
@@ -70,13 +70,13 @@ export const uploadAsset = async (req, res) => {
 
         return res.status(200).json({
             errCode: 0,
-            message: "Upload tài nguyên thành công!",
+            message: "Asset uploaded successfully.",
             asset: newAsset
         });
 
     } catch (error) {
         console.error("Upload Error:", error);
-        return res.status(500).json({ errCode: -1, message: "Lỗi server khi upload file" });
+        return res.status(500).json({ errCode: -1, message: "Server error while uploading the file." });
     }
 };
 
@@ -85,21 +85,21 @@ export const getAllAssets = async (req, res) => {
         const { workspaceId, type, search, sort } = req.query;
 
         if (!workspaceId) {
-            return res.status(400).json({ errCode: 1, message: "Thiếu workspaceId!" });
+            return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
         }
 
         const assets = await assetService.getAssetsService(workspaceId, type, search, sort);
 
         return res.status(200).json({
             errCode: 0,
-            message: "Lấy danh sách tài nguyên thành công!",
+            message: "Assets retrieved successfully.",
             total: assets.length,
             data: assets
         });
 
     } catch (error) {
         console.error("GET Assets Error:", error);
-        return res.status(500).json({ errCode: -1, message: "Lỗi server khi lấy tài nguyên" });
+        return res.status(500).json({ errCode: -1, message: "Server error while fetching assets." });
     }
 };
 
@@ -108,7 +108,7 @@ export const getWorkspaceTags = async (req, res) => {
         const { workspaceId } = req.query;
 
         if (!workspaceId) {
-            return res.status(400).json({ errCode: 1, message: "Thiếu workspaceId" });
+            return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
         }
 
         const tags = await assetService.getUniqueTagsService(workspaceId);
@@ -119,7 +119,7 @@ export const getWorkspaceTags = async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(500).json({ errCode: -1, message: "Lỗi khi lấy tags" });
+        return res.status(500).json({ errCode: -1, message: "Error while fetching tags." });
     }
 };
 
@@ -140,20 +140,20 @@ export const updateAsset = async (req, res) => {
         if (!updatedAsset) {
             return res.status(404).json({
                 errCode: 1,
-                message: "Không tìm thấy tài nguyên này!"
+                message: "This asset was not found."
             });
         }
 
         return res.status(200).json({
             errCode: 0,
-            message: "Cập nhật thành công!",
+            message: "Asset updated successfully.",
             data: updatedAsset
         });
 
     } catch (error) {
         return res.status(500).json({
             errCode: -1,
-            message: "Lỗi cập nhật tài nguyên"
+            message: "Error while updating the asset."
         });
     }
 };
@@ -167,19 +167,19 @@ export const deleteAsset = async (req, res) => {
         if (!deletedAsset) {
             return res.status(404).json({
                 errCode: 1,
-                message: "Không tìm thấy tài nguyên để xóa!"
+                message: "Asset to delete was not found."
             });
         }
 
         return res.status(200).json({
             errCode: 0,
-            message: "Đã xóa tài nguyên!"
+            message: "Asset deleted successfully."
         });
 
     } catch (error) {
         return res.status(500).json({
             errCode: -1,
-            message: "Lỗi khi xóa tài nguyên"
+            message: "Error while deleting the asset."
         });
     }
 };

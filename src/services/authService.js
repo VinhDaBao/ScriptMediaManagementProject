@@ -7,7 +7,7 @@ export const registerUser = async (userData) => {
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-        throw new Error('Email đã được sử dụng.');
+        throw new Error('Email is already in use.');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,7 +37,7 @@ export const verifyOTP = async (email, otp) => {
     });
 
     if (!user) {
-        throw new Error('Mã OTP không chính xác hoặc đã hết hạn.');
+        throw new Error('The OTP is invalid or has expired.');
     }
 
     // 2. Kích hoạt tài khoản và xóa mã OTP đã dùng
@@ -53,16 +53,16 @@ export const loginService = async (email, password) => {
     console.log('Database:', mongoose.connection.db?.databaseName);
     console.log('Host:', mongoose.connection.host);
     if (!user) {
-        throw new Error('User not found');
+        throw new Error('User not found.');
     }
 
     if (user.isActivated === false) {
-        throw new Error('Tài khoản của bạn chưa được kích hoạt bằng mã OTP!');
+        throw new Error('Your account has not been activated with an OTP.');
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-        throw new Error('Invalid password');
+        throw new Error('Invalid password.');
     }
     return user;
 };
