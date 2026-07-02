@@ -120,7 +120,7 @@ const deletePayment = async (id) => {
 const createPayOSLink = async (userId, planId, amount) => {
     const plan = await Plan.findById(planId);
     if (!plan) {
-        throw new Error('Không tìm thấy gói dịch vụ này trong hệ thống.');
+        throw new Error('This service plan could not be found in the system.');
     }
 
     const orderCode = Number(String(Date.now()).slice(-6) + Math.floor(Math.random() * 100));
@@ -197,7 +197,7 @@ const handlePayOSWebhook = async (webhookBody) => {
             return { success: true };
         }
     } catch (error) {
-        console.error('Lỗi Webhook PayOS:', error);
+        console.error('PayOS webhook error:', error);
         throw error;
     }
 };

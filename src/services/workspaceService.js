@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Workspace from '../models/workspace.js';
 import WorkspaceMember from '../models/workspacemember.js';
+import Subscription from '../models/subscription.js';
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -12,43 +13,50 @@ const buildValidationError = (message) => {
 
 const resolveOwnerId = (data, userId) => userId || data?.ownerId;
 
-const createWorkspace = async (data, userId) => {
-    const ownerId = resolveOwnerId(data, userId);
-    if (!data?.name) {
-        throw buildValidationError('Missing required field: name');
+const createWorkspace = async (data) => {
+    const { name, description, ownerId } = data;
+
+    // 1. Kiểm tra gói dịch vụ hiện tại
+    const activeSub = await Subscription.findOne({ 
+        userId: ownerId, 
+        status: "ACTIVE" 
+    }).populate('planId');
+
+    let workspaceLimit = 3; 
+    if (activeSub && activeSub.planId) {
+        workspaceLimit = activeSub.planId.limits?.workspace || 9999;
     }
 
-    if (!ownerId) {
-        throw buildValidationError('Missing required field: ownerId');
-    }
+    // 2. Đếm số Workspace đang sở hữu
+    const currentWorkspaceCount = await Workspace.countDocuments({ ownerId: ownerId });
 
-    if (!isValidObjectId(ownerId)) {
-        throw buildValidationError('Invalid ownerId');
-    }
-
-    const workspace = await Workspace.create({
-        name: data.name,
-        description: data.description ?? '',
-        ownerId,
-    });
-
-    try {
-        await WorkspaceMember.create({
-            workspaceId: workspace._id,
-            userId: ownerId,
-            role: 'OWNER',
-        });
-    } catch (error) {
-        await Workspace.deleteOne({ _id: workspace._id });
+    if (currentWorkspaceCount >= workspaceLimit) {
+        // Ném lỗi 400 (Bad Request) để Frontend bắt được thay vì 200
+        const error = new Error(`Your account has reached the maximum limit of ${workspaceLimit} workspaces. Please upgrade your plan to create more.`);
+        error.statusCode = 400; 
         throw error;
     }
 
-    return workspace;
+    // 3. Tạo Workspace
+    const newWorkspace = await Workspace.create({
+        name,
+        description,
+        ownerId,
+    });
+
+    // 🌟 QUAN TRỌNG: Thêm người tạo vào danh sách Member để nó hiện lên UI! 🌟
+    await WorkspaceMember.create({
+        workspaceId: newWorkspace._id,
+        userId: ownerId,
+        role: 'OWNER'
+    });
+
+    return newWorkspace;
 };
 
 const getAllWorkspaces = async (userId) => {
     if (!isValidObjectId(userId)) {
-        throw buildValidationError('Invalid user id');
+        throw buildValidationError('Invalid user ID.');
     }
 
     const memberships = await WorkspaceMember.find({ userId })
@@ -65,13 +73,13 @@ const getAllWorkspaces = async (userId) => {
 
 const getWorkspaceById = async (id) => {
     if (!isValidObjectId(id)) {
-        throw buildValidationError('Invalid workspace id');
+        throw buildValidationError('Invalid workspace ID.');
     }
 
     const workspace = await Workspace.findById(id);
 
     if (!workspace) {
-        const error = new Error('Workspace not found');
+        const error = new Error('Workspace not found.');
         error.statusCode = 404;
         throw error;
     }

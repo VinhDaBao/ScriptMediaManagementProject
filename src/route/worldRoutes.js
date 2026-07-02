@@ -9,6 +9,7 @@ router.use(authMiddleware);
 
 router.post('/create', worldController.createWorld);
 router.get('/list', worldController.getWorldsByWorkspace);
+
 router.get('/graph/:worldId', worldController.getWorldGraph);
 router.post('/graph/save/:worldId', worldController.saveWorldGraph);
 

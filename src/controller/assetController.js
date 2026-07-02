@@ -4,58 +4,52 @@ import Workspace from '../models/workspace.js';
 import Subscription from '../models/subscription.js';
 import Asset from '../models/asset.js';
 
-// 1. HÀM UPLOAD ASSET (ĐÃ TÍCH HỢP SOFT LIMIT)
 export const uploadAsset = async (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({ errCode: 1, message: "Không tìm thấy file upload!" });
+            return res.status(400).json({ errCode: 1, message: "Uploaded file not found." });
         }
 
-        
-
         const { workspaceId, tags } = req.body;
-        
-        // =========================================================
-        // 🔥 LOGIC KIỂM TRA DUNG LƯỢNG (SOFT LIMIT & DEFAULT FREE) 🔥
-        // =========================================================
+
         if (workspaceId) {
-            // 1. Tìm Workspace để biết ai là Chủ (Owner)
             const workspace = await Workspace.findById(workspaceId);
             if (!workspace) {
-                return res.status(404).json({ errCode: 1, message: "Workspace không tồn tại" });
+                return res.status(404).json({ errCode: 1, message: "Workspace does not exist." });
             }
 
-            // 2. Kiểm tra gói Subscription đang ACTIVE của Chủ Workspace
-            const activeSub = await Subscription.findOne({ 
-                userId: workspace.ownerId, 
-                status: "ACTIVE" 
+            const ownerId = workspace.ownerId;
+
+            const activeSub = await Subscription.findOne({
+                userId: ownerId,
+                status: "ACTIVE"
             }).populate('planId');
 
-            // 3. Mặc định là gói FREE (Ví dụ: 500MB) nếu không có Subscription
-            let limitMB = 500; 
+            let limitMB = 500;
             if (activeSub && activeSub.planId && activeSub.planId.limits) {
-                limitMB = activeSub.planId.limits.storageLimitMB || 500; // Lấy dung lượng gói Premium
+                limitMB = activeSub.planId.limits.storageLimitMB || 2048;
             }
-            const limitBytes = limitMB * 1024 * 1024; // Đổi MB sang Bytes
 
-            // 4. Tính tổng dung lượng (fileSize) các tài nguyên hiện có trong Workspace
+            const limitBytes = limitMB * 1024 * 1024;
+
+            const userWorkspaces = await Workspace.find({ ownerId: ownerId }).select('_id');
+            const workspaceIds = userWorkspaces.map(ws => ws._id);
+
             const sizeAggregation = await Asset.aggregate([
-                { $match: { workspaceId: new mongoose.Types.ObjectId(workspaceId) } },
+                { $match: { workspaceId: { $in: workspaceIds } } },
                 { $group: { _id: null, totalSize: { $sum: "$fileSize" } } }
             ]);
-            
-            const currentTotalSize = sizeAggregation.length > 0 ? sizeAggregation[0].totalSize : 0;
-            const newFileSize = req.file.size; // Kích thước của file đang chuẩn bị up lên
 
-            // 5. Kích hoạt Soft Limit: Chặn không cho Up nếu vượt Quota
+            const currentTotalSize = sizeAggregation.length > 0 ? sizeAggregation[0].totalSize : 0;
+            const newFileSize = req.file.size;
+
             if (currentTotalSize + newFileSize > limitBytes) {
-                return res.status(403).json({ 
-                    errCode: 403, 
-                    message: `Không thể tải lên! Giới hạn của bạn là ${limitMB}MB, nhưng hiện đã dùng ${Math.round(currentTotalSize / (1024 * 1024))}MB. Vui lòng nâng cấp gói hoặc xóa bớt tài nguyên.` 
+                return res.status(400).json({
+                    errCode: 1,
+                    message: `Insufficient storage. Your plan allows up to ${limitMB}MB. You are currently using ${Math.round(currentTotalSize / (1024 * 1024))}MB. Please upgrade your plan or remove some assets.`
                 });
             }
         }
-        // =========================================================
 
         let fileType = 'FILE';
         if (req.file.mimetype.startsWith('audio')) fileType = 'AUDIO';
@@ -63,12 +57,12 @@ export const uploadAsset = async (req, res) => {
         else if (req.file.mimetype.startsWith('image')) fileType = 'IMAGE';
 
         const assetData = {
-            workspaceId: workspaceId || null, 
+            workspaceId: workspaceId || null,
             type: fileType,
             url: req.file.path,
             fileName: req.file.originalname,
-            fileSize: req.file.size, // LƯU THÊM KÍCH THƯỚC FILE
-            tags: tags ? tags.split(',').map(tag => tag.trim()) : [], 
+            fileSize: req.file.size,
+            tags: tags ? tags.split(',').map(tag => tag.trim()) : [],
             isFavorite: false
         };
 
@@ -76,89 +70,116 @@ export const uploadAsset = async (req, res) => {
 
         return res.status(200).json({
             errCode: 0,
-            message: "Upload tài nguyên thành công!",
+            message: "Asset uploaded successfully.",
             asset: newAsset
         });
 
     } catch (error) {
         console.error("Upload Error:", error);
-        return res.status(500).json({ errCode: -1, message: "Lỗi server khi upload file" });
+        return res.status(500).json({ errCode: -1, message: "Server error while uploading the file." });
     }
 };
 
-// 2. HÀM GET ALL ASSETS (GIỮ NGUYÊN)
 export const getAllAssets = async (req, res) => {
     try {
         const { workspaceId, type, search, sort } = req.query;
 
         if (!workspaceId) {
-            return res.status(400).json({ errCode: 1, message: "Thiếu workspaceId!" });
+            return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
         }
 
         const assets = await assetService.getAssetsService(workspaceId, type, search, sort);
 
         return res.status(200).json({
             errCode: 0,
-            message: "Lấy danh sách tài nguyên thành công!",
+            message: "Assets retrieved successfully.",
             total: assets.length,
             data: assets
         });
 
     } catch (error) {
         console.error("GET Assets Error:", error);
-        return res.status(500).json({ errCode: -1, message: "Lỗi server khi lấy tài nguyên" });
+        return res.status(500).json({ errCode: -1, message: "Server error while fetching assets." });
     }
 };
 
-// 3. HÀM LẤY TAGS (GIỮ NGUYÊN)
 export const getWorkspaceTags = async (req, res) => {
     try {
         const { workspaceId } = req.query;
-        if (!workspaceId) return res.status(400).json({ errCode: 1, message: "Thiếu workspaceId" });
+
+        if (!workspaceId) {
+            return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
+        }
 
         const tags = await assetService.getUniqueTagsService(workspaceId);
-        return res.status(200).json({ errCode: 0, data: tags });
+
+        return res.status(200).json({
+            errCode: 0,
+            data: tags
+        });
+
     } catch (error) {
-        return res.status(500).json({ errCode: -1, message: "Lỗi khi lấy tags" });
+        return res.status(500).json({ errCode: -1, message: "Error while fetching tags." });
     }
 };
 
-// 4. HÀM CẬP NHẬT ASSET (GIỮ NGUYÊN)
 export const updateAsset = async (req, res) => {
     try {
-        const { id } = req.params; 
-        const { fileName, tags, workspaceId, isFavorite } = req.body; 
+        const { id } = req.params;
+        const { fileName, tags, workspaceId, isFavorite } = req.body;
 
-        let updateData = {};
+        const updateData = {};
+
         if (fileName) updateData.fileName = fileName;
-        if (tags) updateData.tags = tags; 
-        if (workspaceId) updateData.workspaceId = workspaceId; 
+        if (tags) updateData.tags = tags;
+        if (workspaceId) updateData.workspaceId = workspaceId;
         if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
 
         const updatedAsset = await assetService.updateAssetService(id, updateData);
 
         if (!updatedAsset) {
-            return res.status(404).json({ errCode: 1, message: "Không tìm thấy tài nguyên này!" });
+            return res.status(404).json({
+                errCode: 1,
+                message: "This asset was not found."
+            });
         }
 
-        return res.status(200).json({ errCode: 0, message: "Cập nhật thành công!", data: updatedAsset });
+        return res.status(200).json({
+            errCode: 0,
+            message: "Asset updated successfully.",
+            data: updatedAsset
+        });
+
     } catch (error) {
-        return res.status(500).json({ errCode: -1, message: "Lỗi cập nhật tài nguyên" });
+        return res.status(500).json({
+            errCode: -1,
+            message: "Error while updating the asset."
+        });
     }
 };
 
-// 5. HÀM XÓA ASSET (GIỮ NGUYÊN)
 export const deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
+
         const deletedAsset = await assetService.deleteAssetService(id);
 
         if (!deletedAsset) {
-            return res.status(404).json({ errCode: 1, message: "Không tìm thấy tài nguyên để xóa!" });
+            return res.status(404).json({
+                errCode: 1,
+                message: "Asset to delete was not found."
+            });
         }
 
-        return res.status(200).json({ errCode: 0, message: "Đã xóa tài nguyên!" });
+        return res.status(200).json({
+            errCode: 0,
+            message: "Asset deleted successfully."
+        });
+
     } catch (error) {
-        return res.status(500).json({ errCode: -1, message: "Lỗi khi xóa tài nguyên" });
+        return res.status(500).json({
+            errCode: -1,
+            message: "Error while deleting the asset."
+        });
     }
 };

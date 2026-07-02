@@ -4,7 +4,7 @@ const loginLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 phút
     max: 5, 
     message: { 
-        message: "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 1 phút!" 
+        message: "You have entered incorrect credentials too many times. Please try again in 1 minute." 
     },
     standardHeaders: true,
     legacyHeaders: false,

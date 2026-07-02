@@ -5,7 +5,7 @@ const connectDB = async () => {
     try {
         const dbURI = process.env.MONGO_URI; 
         if (!dbURI) {
-            throw new Error("MONGO_URI không tồn tại trong file .env");
+            throw new Error("MONGO_URI is not defined in the .env file.");
         }
     
         await mongoose.connect(dbURI);

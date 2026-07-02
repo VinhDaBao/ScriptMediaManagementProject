@@ -11,7 +11,7 @@ const salt = bcrypt.genSaltSync(10);
 const sendOTPtoEmail = async (email) => {
     try {
         let user = await User.findOne({ email: email });
-        if (!user) return { errCode: 1, message: 'Email không tồn tại!' };
+        if (!user) return { errCode: 1, message: 'Email does not exist.' };
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         
@@ -22,14 +22,14 @@ const sendOTPtoEmail = async (email) => {
         await transporter.sendMail({
             from: '"SMM Project Support" <no-reply@smm.com>',
             to: email,
-            subject: "Mã xác thực khôi phục mật khẩu",
-            html: `<h3>Mã OTP của bạn là: <b>${otp}</b></h3><p>Mã này có hiệu lực trong 5 phút.</p>`
+            subject: "Password Reset Verification Code",
+            html: `<h3>Your OTP code is: <b>${otp}</b></h3><p>This code is valid for 5 minutes.</p>`
         });
 
-        return { errCode: 0, message: 'Mã OTP đã được gửi!' };
+        return { errCode: 0, message: 'OTP has been sent.' };
     } catch (e) {
         console.log(e);
-        return { errCode: -1, message: 'Lỗi server gửi mail!' };
+        return { errCode: -1, message: 'Server error while sending email.' };
     }
 }
 
@@ -45,7 +45,7 @@ const resetPassword = async (data) => {
 
             return {
                 errCode: 1,
-                message: 'Email không tồn tại!'
+                message: 'Email does not exist.'
             };
         }
 
@@ -61,14 +61,14 @@ const resetPassword = async (data) => {
 
         return {
             errCode: 0,
-            message: 'Đổi mật khẩu thành công!'
+            message: 'Password changed successfully.'
         };
 
     } catch (e) {
 
         return {
             errCode: -1,
-            message: 'Lỗi server!'
+            message: 'Server error.'
         };
     }
 }
@@ -83,7 +83,7 @@ const handleUpdateProfile = (currentUser, data) => {
             if (!user) {
                 return resolve({
                     errCode: 1,
-                    message: 'Không tìm thấy user!'
+                    message: 'User not found.'
                 });
             }
 
@@ -112,7 +112,7 @@ const handleUpdateProfile = (currentUser, data) => {
 
             resolve({
                 errCode: 0,
-                message: 'Cập nhật thành công!',
+                message: 'Profile updated successfully.',
                 user: user
             });
 
@@ -135,20 +135,20 @@ const verifyForgotPasswordOTP = async (data) => {
         if (!user) {
             return {
                 errCode: 1,
-                message: 'OTP sai hoặc hết hạn!'
+                message: 'The OTP is invalid or has expired.'
             };
         }
 
         return {
             errCode: 0,
-            message: 'OTP hợp lệ!'
+            message: 'OTP is valid.'
         };
 
     } catch (e) {
 
         return {
             errCode: -1,
-            message: 'Lỗi server!'
+            message: 'Server error.'
         };
     }
 }
@@ -208,7 +208,7 @@ const getAdminDashboardStats = async () => {
     for (let i = 5; i >= 0; i--) {
         const d = new Date();
         d.setMonth(d.getMonth() - i);
-        const monthStr = `Tháng ${d.getMonth() + 1}`;
+        const monthStr = `Month ${d.getMonth() + 1}`;
 
         const monthPayments = payments.filter(p => {
             const pDate = new Date(p.createdAt);
@@ -221,8 +221,8 @@ const getAdminDashboardStats = async () => {
 
     const freeUsers = totalUsers - proUsers;
     const planData = [
-        { name: 'Gói FREE', value: freeUsers > 0 ? freeUsers : 0 },
-        { name: 'Gói PRO', value: proUsers }
+        { name: 'Free Plan', value: freeUsers > 0 ? freeUsers : 0 },
+        { name: 'Pro Plan', value: proUsers }
     ];
 
     return {

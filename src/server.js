@@ -116,10 +116,10 @@ cron.schedule('0 * * * *', async () => {
         );
         
         if (result.modifiedCount > 0) {
-            console.log(`[Cron] Đã tự động dọn dẹp ${result.modifiedCount} giao dịch PENDING quá 24h.`);
+            console.log(`[Cron] Automatically cleaned up ${result.modifiedCount} PENDING transactions older than 24 hours.`);
         }
     } catch (error) {
-        console.error('[Cron] Lỗi khi dọn dẹp giao dịch PENDING:', error);
+        console.error('[Cron] Error while cleaning up PENDING transactions:', error);
     }
 });
 

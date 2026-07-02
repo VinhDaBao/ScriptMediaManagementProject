@@ -25,7 +25,7 @@ router.get('/user/profile', authMiddleware, authorizeRole('user'), async (req, r
         const user = await User.findById(req.user.id).select('-password');
         res.json({ message: 'Welcome user', user: user });
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi server khi lấy profile' });
+        res.status(500).json({ message: 'Server error while fetching the profile.' });
     }
 });
 
@@ -34,7 +34,7 @@ router.get('/admin/profile', authMiddleware, authorizeRole('admin'), async (req,
         const user = await User.findById(req.user.id).select('-password');
         res.json({ message: 'Welcome admin', user: user });
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi server khi lấy profile admin' });
+        res.status(500).json({ message: 'Server error while fetching the admin profile.' });
     }
 });
 
