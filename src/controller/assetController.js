@@ -19,7 +19,6 @@ export const uploadAsset = async (req, res) => {
             }
 
             const ownerId = workspace.ownerId;
-
             const activeSub = await Subscription.findOne({
                 userId: ownerId,
                 status: "ACTIVE"
@@ -31,7 +30,6 @@ export const uploadAsset = async (req, res) => {
             }
 
             const limitBytes = limitMB * 1024 * 1024;
-
             const userWorkspaces = await Workspace.find({ ownerId: ownerId }).select('_id');
             const workspaceIds = userWorkspaces.map(ws => ws._id);
 
@@ -81,23 +79,15 @@ export const uploadAsset = async (req, res) => {
     }
 };
 
+// ... Các hàm getAllAssets, getWorkspaceTags, updateAsset giữ nguyên như cũ ...
 export const getAllAssets = async (req, res) => {
     try {
         const { workspaceId, type, search, sort } = req.query;
-
         if (!workspaceId) {
             return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
         }
-
         const assets = await assetService.getAssetsService(workspaceId, type, search, sort);
-
-        return res.status(200).json({
-            errCode: 0,
-            message: "Assets retrieved successfully.",
-            total: assets.length,
-            data: assets
-        });
-
+        return res.status(200).json({ errCode: 0, message: "Assets retrieved successfully.", total: assets.length, data: assets });
     } catch (error) {
         console.error("GET Assets Error:", error);
         return res.status(500).json({ errCode: -1, message: "Server error while fetching assets." });
@@ -107,18 +97,11 @@ export const getAllAssets = async (req, res) => {
 export const getWorkspaceTags = async (req, res) => {
     try {
         const { workspaceId } = req.query;
-
         if (!workspaceId) {
             return res.status(400).json({ errCode: 1, message: "workspaceId is required." });
         }
-
         const tags = await assetService.getUniqueTagsService(workspaceId);
-
-        return res.status(200).json({
-            errCode: 0,
-            data: tags
-        });
-
+        return res.status(200).json({ errCode: 0, data: tags });
     } catch (error) {
         return res.status(500).json({ errCode: -1, message: "Error while fetching tags." });
     }
@@ -128,42 +111,23 @@ export const updateAsset = async (req, res) => {
     try {
         const { id } = req.params;
         const { fileName, tags, workspaceId, isFavorite } = req.body;
-
         const updateData = {};
-
         if (fileName) updateData.fileName = fileName;
         if (tags) updateData.tags = tags;
         if (workspaceId) updateData.workspaceId = workspaceId;
         if (isFavorite !== undefined) updateData.isFavorite = isFavorite;
 
         const updatedAsset = await assetService.updateAssetService(id, updateData);
-
-        if (!updatedAsset) {
-            return res.status(404).json({
-                errCode: 1,
-                message: "This asset was not found."
-            });
-        }
-
-        return res.status(200).json({
-            errCode: 0,
-            message: "Asset updated successfully.",
-            data: updatedAsset
-        });
-
+        if (!updatedAsset) return res.status(404).json({ errCode: 1, message: "This asset was not found." });
+        return res.status(200).json({ errCode: 0, message: "Asset updated successfully.", data: updatedAsset });
     } catch (error) {
-        return res.status(500).json({
-            errCode: -1,
-            message: "Error while updating the asset."
-        });
+        return res.status(500).json({ errCode: -1, message: "Error while updating the asset." });
     }
 };
 
 export const deleteAsset = async (req, res) => {
     try {
         const { id } = req.params;
-
-        // Quá trình xóa file vật lý trên Cloudinary đã được gom gọn vào file Service
         const deletedAsset = await assetService.deleteAssetService(id);
 
         if (!deletedAsset) {

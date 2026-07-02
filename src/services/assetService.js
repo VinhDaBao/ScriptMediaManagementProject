@@ -1,8 +1,8 @@
 import Asset from '../models/asset.js'; 
 import Workspace from '../models/workspace.js';
-import { v2 as cloudinary } from 'cloudinary'; 
+import { cloudinary } from '../config/cloudinary.js'; // BỔ SUNG: Import thư viện cloudinary
 
-// 1. Service Upload (Giữ nguyên)
+// 1. Service Upload
 export const createAssetService = async (data) => {
     try {
         const newAsset = new Asset(data);
@@ -13,7 +13,7 @@ export const createAssetService = async (data) => {
     }
 };
 
-// 2. Service Lấy danh sách (Giữ nguyên)
+// 2. Service Lấy danh sách
 export const getAssetsService = async (workspaceId, type, search, sort) => {
     try {
         let queryFilter = { workspaceId: workspaceId };
@@ -41,9 +41,10 @@ export const getAssetsService = async (workspaceId, type, search, sort) => {
     }
 };
 
-// 3. Service Lấy Tags (Giữ nguyên)
+// 3. Service Lấy Tags
 export const getUniqueTagsService = async (workspaceId) => {
     try {
+        // Hàm distinct sẽ gom tất cả các tags lại, loại bỏ những tag trùng nhau
         const tags = await Asset.distinct('tags', { workspaceId: workspaceId });
         return tags;
     } catch (error) {
@@ -51,7 +52,7 @@ export const getUniqueTagsService = async (workspaceId) => {
     }
 };
 
-// 4. Service Cập nhật (Đã bổ sung logic xóa file cũ nếu có up file mới)
+// 4. Service Cập nhật (Đã bổ sung logic xóa file cũ trên Cloudinary nếu up file mới)
 export const updateAssetService = async (assetId, updateData) => {
     try {
         // NẾU LUỒNG UPDATE CÓ THAY ĐỔI FILE MỚI:
@@ -66,6 +67,7 @@ export const updateAssetService = async (assetId, updateData) => {
             }
         }
 
+        // { new: true } để nó trả về cục data MỚI SAU KHI SỬA
         const updatedAsset = await Asset.findByIdAndUpdate(assetId, updateData, { new: true });
         return updatedAsset;
     } catch (error) {
@@ -73,23 +75,30 @@ export const updateAssetService = async (assetId, updateData) => {
     }
 };
 
+// 5. Service Xóa (Nâng cấp hàm xóa file trên Cloudinary)
 export const deleteAssetService = async (assetId) => {
     try {
-        // BƯỚC 1: Tìm thông tin asset trong DB trước
-        const assetToDelete = await Asset.findById(assetId);
-        if (!assetToDelete) {
-            throw new Error("Không tìm thấy tài nguyên để xóa");
+        // 1. Tìm tài nguyên trong database để lấy publicId
+        const asset = await Asset.findById(assetId);
+        
+        if (!asset) {
+            return null;
         }
 
-        // BƯỚC 2: Xóa file vật lý trên Cloudinary (nếu có publicId)
-        if (assetToDelete.publicId) {
-            // Lưu ý: Cloudinary coi Audio và Video chung một type là 'video' khi xóa
-            const resourceType = (assetToDelete.type === 'VIDEO' || assetToDelete.type === 'AUDIO') ? 'video' : 'image';
-            
-            await cloudinary.uploader.destroy(assetToDelete.publicId, { resource_type: resourceType });
+        // 2. Xóa file thực tế trên Cloudinary
+        if (asset.publicId) {
+            // Xác định resource_type dựa trên loại file (video/audio hoặc file thường)
+            let resourceType = 'image';
+            if (asset.type === 'VIDEO' || asset.type === 'AUDIO') {
+                resourceType = 'video';
+            } else if (asset.type === 'FILE') {
+                resourceType = 'raw';
+            }
+
+            await cloudinary.uploader.destroy(asset.publicId, { resource_type: resourceType });
         }
 
-        // BƯỚC 3: Xóa record trong Database
+        // 3. Xóa record trong database sau khi xóa trên mây thành công
         const deletedAsset = await Asset.findByIdAndDelete(assetId);
         return deletedAsset;
     } catch (error) {
