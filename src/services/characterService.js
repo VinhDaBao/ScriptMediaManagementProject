@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Character from '../models/character.js';
+import Block from '../models/block.js';
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
@@ -84,9 +85,34 @@ const updateCharacter = async (id, data) => {
     return await character.save();
 };
 
+const deleteCharacter = async (id) => {
+    if (!isValidObjectId(id)) {
+        throw buildValidationError('Invalid character id');
+    }
+
+    const character = await Character.findById(id);
+    if (!character) {
+        const error = new Error('Character not found');
+        error.statusCode = 404;
+        throw error;
+    }
+
+    // Tự động quét qua toàn bộ các Block hội thoại của hệ thống,
+    // khu vực nào dính mã ID nhân vật này thì ép trường characterId về chuỗi rỗng ""
+    // Sử dụng dot notation "content.characterId" để truy cập sâu vào object của MongoDB
+    await Block.updateMany(
+        { "content.characterId": id },
+        { $set: { "content.characterId": "" } }
+    );
+
+    // Sau khi dọn sạch liên kết mồ côi, tiến hành xóa thực thể nhân vật gốc khỏi MongoDB
+    return await Character.findByIdAndDelete(id);
+};
+
 export default {
     createCharacter,
     getAllCharacters,
     getCharacterById,
     updateCharacter,
+    deleteCharacter,
 };

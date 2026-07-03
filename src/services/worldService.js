@@ -40,22 +40,52 @@ const getWorldGraph = async (worldId, queryData = {} ) => {
     if (!isValidObjectId(worldId)) {
         throw buildValidationError("Invalid world id", 400);
     }
-    /*
-    const worldExists = await World.exists({ _id: worldId });
-    if (!worldExists) {
-        throw buildValidationError("World not found", 404);
-    }
-    */
-
-    // Bốc trường stageId từ Frontend gửi lên qua query, mặc định lấy stage_1
     const stageId = queryData.stageId || "stage_1";
 
-    // Đơn giản hóa bộ lọc: Chỉ bốc các Node và Edge thuộc đúng World này và đúng Tab này
+    // Sử dụng findOneAndUpdate với upsert: true để nếu Workspace chưa có sơ đồ,
+    // Hệ thống sẽ tự tạo mới một bản ghi kèm Tab mặc định là "Main Stage" luôn.
+    const worldDoc = await World.findOneAndUpdate(
+        { workspaceId: worldId },
+        {
+            $setOnInsert: {
+                name: "Relationship Diagram",
+                stages: [{ key: "stage_1", label: "Main Stage" }]
+            }
+        },
+        { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
+    );
+
     const [nodes, edges] = await Promise.all([
         WorldNode.find({ worldId, stageId }),
         WorldEdge.find({ worldId, stageId }),
     ]);
-    return { nodes, edges };
+
+    return { nodes, edges, stages: worldDoc?.stages || [] };
+};
+
+// 2. Viết thêm hàm cập nhật danh sách cấu hình mảng Tab
+const updateWorldStages = async (worldId, stages) => {
+    if (!isValidObjectId(worldId)) {
+        throw buildValidationError("Invalid world id", 400);
+    }
+    if (!Array.isArray(stages) || stages.length === 0) {
+        throw buildValidationError("Stages must be a non-empty array", 400);
+    }
+
+    // Thêm upsert: true và $setOnInsert trường name (bắt buộc của Schema)
+    // Để khi người dùng bấm Add Stage lần đầu tiên, DB sẽ tự sinh tài liệu World gốc.
+    return await World.findOneAndUpdate(
+        { workspaceId: worldId },
+        {
+            $set: { stages },
+            $setOnInsert: { name: "Relationship Diagram" }
+        },
+        {
+            upsert: true,
+            returnDocument: 'after',
+            setDefaultsOnInsert: true
+        }
+    );
 };
 
 //Hàm lưu, cập nhật toàn bộ sơ đồ bằng cơ chế ghi đè dữ liệu theo tab
@@ -130,9 +160,29 @@ const saveWorldGraph = async (worldId, graphData) => {
     }
 };
 
+//Hàm xoá phân đoạn Stage
+const deleteWorldStage = async (worldId, stageId) => {
+    if (!isValidObjectId(worldId)) {
+        throw buildValidationError("Invalid world id", 400);
+    }
+    if (!stageId) {
+        throw buildValidationError("Missing stageId", 400);
+    }
+
+    // Xóa sạch tất cả các Node và Edge thuộc phân đoạn này
+    await Promise.all([
+        WorldNode.deleteMany({ worldId, stageId }),
+        WorldEdge.deleteMany({ worldId, stageId })
+    ]);
+
+    return { message: "Stage data deleted successfully", stageId };
+};
+
 export default {
   createWorld,
   getWorldsByWorkspace,
   getWorldGraph,
   saveWorldGraph,
+  deleteWorldStage,
+  updateWorldStages
 };

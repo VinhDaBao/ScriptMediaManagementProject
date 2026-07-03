@@ -13,4 +13,6 @@ router.get('/list', worldController.getWorldsByWorkspace);
 router.get('/graph/:worldId', worldController.getWorldGraph);
 router.post('/graph/save/:worldId', worldController.saveWorldGraph);
 
+router.delete('/graph/delete-stage/:worldId', worldController.deleteWorldStage);
+router.put('/graph/stages/:worldId', worldController.updateWorldStages);
 export default router;

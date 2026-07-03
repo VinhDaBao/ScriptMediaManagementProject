@@ -69,9 +69,47 @@ const saveWorldGraph = async (req, res) => {
   }
 };
 
+//Xoá stage ở World
+const deleteWorldStage = async (req, res, next) => {
+    try {
+        const { worldId } = req.params;
+        const { stageId } = req.query;
+
+        const result = await worldService.deleteWorldStage(worldId, stageId);
+        return res.status(200).json({
+            errCode: 0,
+            data: result
+        });
+    } catch (error) {
+        next(error); // Đẩy qua middleware xử lý lỗi tập trung
+    }
+};
+
+const updateWorldStages = async (req, res, next) => {
+    try {
+        const { worldId } = req.params;
+        const { stages } = req.body;
+        const updatedWorld = await worldService.updateWorldStages(worldId, stages);
+
+        // Nếu updatedWorld bị null thì báo lỗi trực quan thay vì vỡ code
+        if (!updatedWorld) {
+            return res.status(404).json({
+                errCode: 1,
+                message: "World configuration not found for this workspace. Please create a world diagram first."
+            });
+        }
+
+        return res.status(200).json({ errCode: 0, data: updatedWorld.stages });
+    } catch (error) {
+        next(error);
+    }
+ };
+
 export default {
   createWorld,
   getWorldsByWorkspace,
   getWorldGraph,
   saveWorldGraph,
+  deleteWorldStage,
+  updateWorldStages
 };

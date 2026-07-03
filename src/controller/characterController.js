@@ -70,9 +70,35 @@ const updateCharacter = async (req, res) => {
     }
 };
 
+const deleteCharacter = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const character = await characterService.getCharacterById(id);
+
+        await characterService.deleteCharacter(id);
+
+        // Tạo Activity Log ghi nhận hành động XÓA
+        await activityLogService.createLog({
+            workspaceId: req.params.workspaceId,
+            userId: req.user.id,
+            entityType: "CHARACTER",
+            entityId: id,
+            action: "DELETE",
+            metadata: {
+                name: character.name,
+            },
+        });
+
+        return res.status(200).json({ errCode: 0, message: 'Character deleted successfully' });
+    } catch (error) {
+        return sendError(res, error);
+    }
+};
+
 export default {
     createCharacter,
     getAllCharacters,
     getCharacterById,
     updateCharacter,
+    deleteCharacter,
 };

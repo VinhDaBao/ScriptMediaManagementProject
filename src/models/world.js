@@ -27,6 +27,15 @@ const worldSchema = new mongoose.Schema(
         index: true,
       },
     ],
+    stages: {
+      type: [
+        {
+          key: { type: String, required: true },
+          label: { type: String, required: true }
+        }
+      ],
+      default: [{ key: "stage_1", label: "Main Stage" }] // Tab mặc định khi khởi tạo sơ đồ
+    }
   },
   {
     timestamps: true,

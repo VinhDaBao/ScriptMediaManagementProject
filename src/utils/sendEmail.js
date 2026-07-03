@@ -18,7 +18,7 @@ export const sendOTP = async (email, otp) => {
         from: `"SMM Project" <${process.env.EMAIL_USER}>`,
         to: email,
         subject: 'Account Registration Verification Code',
-        text: `Your OTP code is: ${otp}. This code is valid for 10 minutes.`,
+        text: `Your OTP code is: ${otp}. This code is valid for 5 minutes.`,
     };
 
     return await transporter.sendMail(mailOptions);

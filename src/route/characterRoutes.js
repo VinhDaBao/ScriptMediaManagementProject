@@ -9,5 +9,6 @@ router.post('/', authMiddleware, authorizeWorkspace("EDITOR"), characterControll
 router.get('/', authMiddleware, authorizeWorkspace("VIEWER"), characterController.getAllCharacters);
 router.get('/:id', authMiddleware, authorizeWorkspace("VIEWER"), characterController.getCharacterById);
 router.put('/:id', authMiddleware, authorizeWorkspace("EDITOR"), characterController.updateCharacter);
+router.delete('/:id', authMiddleware, authorizeWorkspace("EDITOR"), characterController.deleteCharacter);
 
 export default router;
