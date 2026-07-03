@@ -110,8 +110,8 @@ const saveWorldGraph = async (worldId, graphData) => {
             stageId: stageId,
             name: node.name || node.data?.label || "Unnamed Node",
             description: node.description || node.data?.description || "",
-            keyValues: node.keyValues || [],
-            tags: node.tags || [],
+            keyValues: node.keyValues || node.data?.keyValues || [],
+            tags: node.tags || (node.data?.role ? [node.data.role] : []),
             avatarUrl: node.avatarUrl || node.data?.avatarUrl || "",
             position: {
                 x: node.position?.x || 0,
